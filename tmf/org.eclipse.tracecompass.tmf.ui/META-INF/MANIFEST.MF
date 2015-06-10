@@ -19,7 +19,8 @@ Require-Bundle: org.eclipse.core.expressions,
  org.eclipse.ui.navigator,
  org.eclipse.ui.navigator.resources,
  org.swtchart,
- com.ibm.icu
+ com.ibm.icu,
+ org.eclipse.tracecompass.statesystem.core
 Export-Package: org.eclipse.tracecompass.internal.tmf.ui;x-friends:="org.eclipse.tracecompass.tmf.ui.tests,org.eclipse.tracecompass.tmf.ctf.ui.tests",
  org.eclipse.tracecompass.internal.tmf.ui.commands;x-internal:=true,
  org.eclipse.tracecompass.internal.tmf.ui.dialogs;x-internal:=true,
@@ -92,4 +93,11 @@ Export-Package: org.eclipse.tracecompass.internal.tmf.ui;x-friends:="org.eclipse
 Import-Package: com.google.common.base,
  com.google.common.collect,
  org.eclipse.emf.common.util,
- org.eclipse.emf.ecore
+ org.eclipse.emf.ecore,
+ org.eclipse.tracecompass.analysis.os.linux.core.kernelanalysis,
+ org.eclipse.tracecompass.internal.tmf.analysis.xml.core,
+ org.eclipse.tracecompass.internal.tmf.analysis.xml.ui,
+ org.eclipse.tracecompass.internal.tmf.analysis.xml.ui.handler,
+ org.eclipse.tracecompass.tmf.analysis.xml.core.module,
+ org.eclipse.tracecompass.tmf.analysis.xml.core.stateprovider,
+ org.eclipse.tracecompass.tmf.analysis.xml.ui.module

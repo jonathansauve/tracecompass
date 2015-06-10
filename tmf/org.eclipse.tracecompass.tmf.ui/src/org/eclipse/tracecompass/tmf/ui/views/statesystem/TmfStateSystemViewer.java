@@ -352,7 +352,11 @@ public class TmfStateSystemViewer extends AbstractTmfTreeViewer {
         updateContent(getSelectionBeginTime(), getSelectionEndTime(), true);
     }
 
-    private static class StateSystemEntry extends TmfTreeViewerEntry {
+    /**
+     * @since 1.0
+     */
+    @SuppressWarnings("javadoc")
+    public static class StateSystemEntry extends TmfTreeViewerEntry {
         private final @NonNull ITmfStateSystem fSS;
 
         public StateSystemEntry(@NonNull ITmfStateSystem ss) {
@@ -365,7 +369,11 @@ public class TmfStateSystemViewer extends AbstractTmfTreeViewer {
         }
     }
 
-    private class StateEntry extends TmfTreeViewerEntry {
+    /**
+     * @since 1.0
+     */
+    @SuppressWarnings("javadoc")
+    public class StateEntry extends TmfTreeViewerEntry {
 
         private final int fQuark;
         private final String fFullPath;

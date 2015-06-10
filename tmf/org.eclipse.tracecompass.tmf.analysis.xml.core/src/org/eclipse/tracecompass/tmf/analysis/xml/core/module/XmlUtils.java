@@ -19,13 +19,20 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.Source;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
@@ -36,9 +43,14 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.Activator;
 import org.eclipse.tracecompass.tmf.analysis.xml.core.stateprovider.TmfXmlStrings;
+import org.eclipse.tracecompass.tmf.analysis.xml.ui.module.XmlAnalysisModuleSource;
+import org.eclipse.tracecompass.tmf.core.util.Pair;
+import org.osgi.framework.BundleContext;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -60,6 +72,9 @@ public class XmlUtils {
     /** Name of the XSD schema file */
     private static final String XSD = "xmlDefinition.xsd"; //$NON-NLS-1$
 
+    /** Map to keep the original file of xml analysis */
+    private static final Map<File, File> xmlFiles = new HashMap<>();
+
     /** Make this class non-instantiable */
     private XmlUtils() {
 
@@ -80,7 +95,7 @@ public class XmlUtils {
         if (!dir.exists() || !dir.isDirectory()) {
             dir.mkdirs();
         }
-
+        dir.deleteOnExit();
         return path;
     }
 
@@ -149,7 +164,30 @@ public class XmlUtils {
             Activator.logError(error, e);
             return new Status(IStatus.ERROR, Activator.PLUGIN_ID, error, e);
         }
+
+        xmlFiles.put(toFile, fromFile);
         return Status.OK_STATUS;
+    }
+
+
+    /**
+     * Deletes an XML file from the plugin's path
+     *
+     * @param toDelete The XML file to delete
+     * @return Whether the file was successfully deleted
+     * @since 1.0
+     */
+    public static IStatus removeXmlFile(File toDelete)
+    {
+        boolean valid = xmlFileIsActive(toDelete);
+
+        if(valid) {
+            xmlFiles.remove(toDelete);
+            toDelete.delete();
+            XmlAnalysisModuleSource.notifyModuleChange();
+            return Status.OK_STATUS;
+        }
+        return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "The XML file is not an active XML Analysis"); //$NON-NLS-1$
     }
 
     /**
@@ -246,7 +284,575 @@ public class XmlUtils {
         } catch (ParserConfigurationException | SAXException | IOException e) {
             return null;
         }
-
     }
 
+    /**
+     * This function returns the analysis ID of a file. This ID is the same
+     * for each Analysis node and it's also the ID the stateProvider.
+     * @param filePath
+     *              The path of the file to search in
+     * @return
+     *              The analysis ID, or empty string if not found
+     * @since 1.0
+     */
+    public static String getAnalysisId(String filePath) {
+        if (filePath == null) {
+            return null;
+        }
+
+        IPath path = new Path(filePath);
+        File file = path.toFile();
+        if (file == null || !file.exists() || !file.isFile() || !xmlValidate(file).isOK()) {
+            return null;
+        }
+
+        try {
+            /* Load the XML File */
+            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder dBuilder;
+
+            dBuilder = dbFactory.newDocumentBuilder();
+            Document doc = dBuilder.parse(file);
+            doc.getDocumentElement().normalize();
+
+            /* Get the state provider, if present */
+            NodeList stateProviders = doc.getElementsByTagName(TmfXmlStrings.STATE_PROVIDER);
+            if(stateProviders.getLength() != 0) {
+                /* Take the first one and return his id */
+                return stateProviders.item(0).getAttributes().getNamedItem(TmfXmlStrings.ID).getNodeValue();
+            }
+
+            NodeList nodes = doc.getElementsByTagName(TmfXmlStrings.ANALYSIS);
+            if(nodes.getLength() != 0) {
+                /* Take the first one and return his id */
+                return nodes.item(0).getAttributes().getNamedItem(TmfXmlStrings.ID).getNodeValue();
+            }
+
+            return ""; //$NON-NLS-1$
+        } catch (ParserConfigurationException | SAXException | IOException e) {
+            return null;
+        }
+    }
+
+    /**
+     * This function allows to save a new value for an attribute to both
+     * original XML file and the one in xml_files runtime folder.
+     *
+     * @param copyFile
+     *              The file in xml_files folder
+     * @param originalFile
+     *              The original file
+     * @param node
+     *              The node to set the new value
+     * @param attribute
+     *              The attribute to change
+     * @param value
+     *              The new value
+     * @throws ParserConfigurationException
+     * @throws IOException
+     * @throws SAXException
+     * @throws TransformerException
+     * @return Whether the attribute was successfully setted
+     * @since 1.0
+     */
+    @SuppressWarnings("javadoc")
+    public static IStatus setNewAttribute(File copyFile, File originalFile, Node node, String attribute, String value) throws ParserConfigurationException, SAXException, IOException, TransformerException {
+
+        if(xmlFileIsActive(copyFile) == false) {
+            return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "One or both of these XML file are not valid"); //$NON-NLS-1$
+        }
+
+        // Parse the files
+        DocumentBuilderFactory dbFact = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = dbFact.newDocumentBuilder();
+        Document doc = dBuilder.parse(copyFile);
+        Document originalDoc = dBuilder.parse(originalFile);
+
+        // Find the node to be modified
+        boolean docChanged = false;
+        NodeList nodes = doc.getElementsByTagName(node.getNodeName());
+        for(int i = 0; i < nodes.getLength(); i++) {
+            if(nodes.item(i).isEqualNode(node)) {
+                nodes.item(i).getAttributes().getNamedItem(attribute).setNodeValue(value);
+                docChanged = true;
+                break;
+            }
+        }
+
+        boolean originalDocChanged = false;
+        NodeList originalNodes = originalDoc.getElementsByTagName(node.getNodeName());
+        for(int i = 0; i < originalNodes.getLength(); i++) {
+            if(originalNodes.item(i).isEqualNode(node)) {
+                originalNodes.item(i).getAttributes().getNamedItem(attribute).setNodeValue(value);
+                originalDocChanged = true;
+                break;
+            }
+        }
+
+        // update the files
+        if(docChanged) {
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            Transformer transformer = transformerFactory.newTransformer();
+            DOMSource source = new DOMSource(doc);
+            StreamResult result = new StreamResult(new File(copyFile.getAbsolutePath()));
+            transformer.transform(source, result);
+        }
+
+        if(originalDocChanged) {
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            Transformer transformer = transformerFactory.newTransformer();
+            DOMSource source = new DOMSource(originalDoc);
+            StreamResult result = new StreamResult(new File(originalFile.getAbsolutePath()));
+            transformer.transform(source, result);
+        }
+
+        return Status.OK_STATUS;
+    }
+
+    /**
+     * @param nodeName
+     *              The node name : one in <code>TmfXmlStrings</code> class or
+     *              <code>TmfXmlUiStrings</code> class
+     * @param parent
+     *              The parent of the node or <code>null</code>. This parent must be present in
+     *              <code>xmlFile</code> (if not <code>null</code>)
+     * @param xmlFile
+     *              The input file
+     * @return
+     *              A pair that contains both status of the creation and the new node (<code>parent</code>
+     *              if the returned status isn't <code>Status.OK_STATUS</code>)
+     * @since 1.0
+     */
+    @SuppressWarnings("null")
+    public static Pair<IStatus, Node> createNewNode(String nodeName, @NonNull Node parent, File xmlFile) {
+        boolean valid = xmlFileIsActive(xmlFile);
+
+        if(valid) {
+            /**
+             * 1- Get the original file
+             * 2- Parse the files
+             * 3- Find the parent
+             * 4- Create the new node
+             * 5- Save the files
+             */
+
+            File originalFile = xmlFiles.get(xmlFile);
+            if(originalFile == null) {
+                return new Pair<IStatus, Node>(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Invalid XML file"), parent); //$NON-NLS-1$;
+            }
+
+            DocumentBuilderFactory dbFact = DocumentBuilderFactory.newInstance();
+            DocumentBuilder dBuilder;
+            Document doc;
+            Document originalDoc;
+            try {
+                dBuilder = dbFact.newDocumentBuilder();
+                doc = dBuilder.parse(xmlFile);
+                originalDoc = dBuilder.parse(originalFile);
+            } catch (SAXException e) {
+                e.printStackTrace();
+                return new Pair<IStatus, Node>(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "SAX error"), parent); //$NON-NLS-1$
+            } catch (IOException e) {
+                e.printStackTrace();
+                return new Pair<IStatus, Node>(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "IO error"), parent); //$NON-NLS-1$
+            } catch (ParserConfigurationException e) {
+                e.printStackTrace();
+                return new Pair<IStatus, Node>(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Parsing error"), parent); //$NON-NLS-1$
+            } catch (Throwable e) {
+                e.printStackTrace();
+                return new Pair<IStatus, Node>(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Unknown error"), parent); //$NON-NLS-1$
+            }
+
+            boolean docChanged = false;
+            Element newNode = null;
+            NodeList nodes = doc.getElementsByTagName(parent.getNodeName());
+            for(int i = 0; i < nodes.getLength(); i++) {
+                if(nodes.item(i).getNodeName().equals(parent.getNodeName())) {
+                    Node parentNode = nodes.item(i);
+                    newNode = doc.createElement(nodeName);
+                    newNode.setAttribute(TmfXmlStrings.TYPE, TmfXmlStrings.TYPE_CONSTANT);
+                    parentNode.appendChild(newNode); // Not sure if its work
+                    docChanged = true;
+                }
+            }
+
+            boolean originalDocChanged = false;
+            NodeList originalNodes = originalDoc.getElementsByTagName(parent.getNodeName());
+            for(int i = 0; i < originalNodes.getLength(); i++) {
+                if(originalNodes.item(i).getNodeName().equals(parent.getNodeName())) {
+                    Node parentNode = originalNodes.item(i);
+                    Element newOriginalNode = originalDoc.createElement(nodeName);
+                    newOriginalNode.setAttribute(TmfXmlStrings.TYPE, TmfXmlStrings.TYPE_CONSTANT);
+                    parentNode.appendChild(newOriginalNode);
+                    originalDocChanged = true;
+                }
+            }
+
+            try {
+                if(docChanged) {
+                    TransformerFactory transformerFactory = TransformerFactory.newInstance();
+                    Transformer transformer = transformerFactory.newTransformer();
+                    DOMSource source = new DOMSource(doc);
+                    StreamResult result = new StreamResult(new File(xmlFile.getAbsolutePath()));
+                    transformer.transform(source, result);
+                }
+
+                if(originalDocChanged) {
+                    TransformerFactory transformerFactory = TransformerFactory.newInstance();
+                    Transformer transformer = transformerFactory.newTransformer();
+                    DOMSource source = new DOMSource(originalDoc);
+                    StreamResult result = new StreamResult(new File(originalFile.getAbsolutePath()));
+                    transformer.transform(source, result);
+                }
+            } catch(Throwable e) {
+                e.printStackTrace();
+                return new Pair<IStatus, Node>(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Error when writing in files"), parent); //$NON-NLS-1$
+            }
+
+            if(newNode != null) {
+                final IStatus ok_STATUS2 = Status.OK_STATUS;
+                if (ok_STATUS2 != null) {
+                    return new Pair<IStatus, Node>(ok_STATUS2, newNode);
+                }
+            }
+        }
+        return new Pair<>(Status.CANCEL_STATUS, parent);
+    }
+
+    /**
+     * @param newNode
+     *              The node to be appended
+     * @param parent
+     *              The parent of the new node
+     * @param xmlFile
+     *              The input file
+     * @param applyChanges
+     *              Whether we apply the changes to the file or not
+     * @return
+     *              Whether the element was successfully appended
+     * @since 1.0
+     */
+    public static IStatus appendElementInFile(Node newNode, Node parent, File xmlFile, boolean applyChanges) {
+        boolean valid = xmlFileIsActive(xmlFile);
+
+        if(valid) {
+            /**
+             * 1- Get the original file
+             * 2- Parse the files
+             * 3- Find the parent
+             * 4- Check if the parent already have a child same as <code>newNode</code>
+             * 4- Append the new node
+             * 5- Save the files
+             */
+            File originalFile = xmlFiles.get(xmlFile);
+            if(originalFile == null) {
+                return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Invalid XML file"); //$NON-NLS-1$
+            }
+
+            DocumentBuilderFactory dbFact = DocumentBuilderFactory.newInstance();
+            DocumentBuilder dBuilder;
+            Document doc;
+            Document originalDoc;
+            try {
+                dBuilder = dbFact.newDocumentBuilder();
+                doc = dBuilder.parse(xmlFile);
+                originalDoc = dBuilder.parse(originalFile);
+            } catch (SAXException e) {
+                e.printStackTrace();
+                return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "SAX error"); //$NON-NLS-1$
+            } catch (IOException e) {
+                e.printStackTrace();
+                return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "IO error"); //$NON-NLS-1$
+            } catch (ParserConfigurationException e) {
+                e.printStackTrace();
+                return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Parsing error"); //$NON-NLS-1$
+            } catch (Throwable e) {
+                e.printStackTrace();
+                return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Unknown error"); //$NON-NLS-1$
+            }
+
+            boolean docChanged = false;
+            boolean isPresentInDoc = false;
+            NodeList nodes = doc.getElementsByTagName(parent.getNodeName());
+            for(int i = 0; i < nodes.getLength(); i++) {
+                if(nodes.item(i).getNodeName().equals(parent.getNodeName())) {
+                    Node parentNode = nodes.item(i);
+                    NodeList parentNodeChildren = parentNode.getChildNodes();
+                    for(int j = 0; j < parentNodeChildren.getLength(); j++) {
+                        Node parentNodeChild = parentNodeChildren.item(j);
+                        if(parentNodeChild.isEqualNode(newNode)) {
+                            isPresentInDoc = true;
+                            break;
+                        }
+                    }
+                    if(!isPresentInDoc) {
+                        Node newDocNode = doc.importNode(newNode, true);
+                        nodes.item(i).appendChild(newDocNode);
+                        docChanged = true;
+                        break;
+                    }
+                }
+            }
+
+            boolean originalDocChanged = false;
+            boolean isPresentInOriginalDoc = false;
+            NodeList originalNodes = originalDoc.getElementsByTagName(parent.getNodeName());
+            for(int i = 0; i < originalNodes.getLength(); i++) {
+                if(originalNodes.item(i).getNodeName().equals(parent.getNodeName())) {
+                    Node parentNode = originalNodes.item(i);
+                    NodeList parentNodeChildren = parentNode.getChildNodes();
+                    for(int j = 0; j < parentNodeChildren.getLength(); j++) {
+                        Node parentNodeChild = parentNodeChildren.item(j);
+                        if(parentNodeChild.isEqualNode(newNode)) {
+                            isPresentInOriginalDoc = true;
+                            break;
+                        }
+                    }
+                    if(!isPresentInOriginalDoc) {
+                        Node newOriginalDocNode = originalDoc.importNode(newNode, true);
+                        originalNodes.item(i).appendChild(newOriginalDocNode);
+                        originalDocChanged = true;
+                        break;
+                    }
+                }
+            }
+
+            if(isPresentInDoc && isPresentInOriginalDoc) {
+                ErrorDialog.openError(Display.getDefault().getActiveShell(), "Append error",  //$NON-NLS-1$
+                        "An error occured when appending the newNode", new Status(IStatus.ERROR, Activator.PLUGIN_ID,  //$NON-NLS-1$
+                                "The newNode is already present under the parent")); //$NON-NLS-1$
+                return Status.CANCEL_STATUS;
+            }
+            if(applyChanges) {
+                try {
+                    if(docChanged) {
+                        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+                        Transformer transformer = transformerFactory.newTransformer();
+                        DOMSource source = new DOMSource(doc);
+                        StreamResult result = new StreamResult(new File(xmlFile.getAbsolutePath()));
+                        transformer.transform(source, result);
+                    }
+
+                    if(originalDocChanged) {
+                        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+                        Transformer transformer = transformerFactory.newTransformer();
+                        DOMSource source = new DOMSource(originalDoc);
+                        StreamResult result = new StreamResult(new File(originalFile.getAbsolutePath()));
+                        transformer.transform(source, result);
+                    }
+                } catch(Throwable e) {
+                    e.printStackTrace();
+                    return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Error when writing in files"); //$NON-NLS-1$
+                }
+            }
+            return Status.OK_STATUS;
+        }
+        return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "The file is not valid"); //$NON-NLS-1$
+    }
+
+    /**
+     * @param oldNode
+     *              The node to be removed
+     * @param parent
+     *              The parent of the oldNode
+     * @param xmlFile
+     *              The file that contains the node
+     * @param applyChanges
+     *              Whether we apply the changes to the file or not
+     * @return
+     *              Whether the element was successfully removed
+     * @since 1.0
+     */
+    public static IStatus removeElementFromFile(Node oldNode, Node parent, File xmlFile, boolean applyChanges) {
+        boolean valid = xmlFileIsActive(xmlFile);
+
+        if(valid) {
+            /**
+             * 1- Get the original file
+             * 2- Parse the files
+             * 3- Find the parent
+             * 4- Delete the node
+             * 5- Save the files
+             */
+            File originalFile = xmlFiles.get(xmlFile);
+            if(originalFile == null) {
+                return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Invalid XML file"); //$NON-NLS-1$
+            }
+
+            DocumentBuilderFactory dbFact = DocumentBuilderFactory.newInstance();
+            DocumentBuilder dBuilder;
+            Document doc;
+            Document originalDoc;
+            try {
+                dBuilder = dbFact.newDocumentBuilder();
+                doc = dBuilder.parse(xmlFile);
+                originalDoc = dBuilder.parse(originalFile);
+            } catch (SAXException e) {
+                e.printStackTrace();
+                return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "SAX error"); //$NON-NLS-1$
+            } catch (IOException e) {
+                e.printStackTrace();
+                return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "IO error"); //$NON-NLS-1$
+            } catch (ParserConfigurationException e) {
+                e.printStackTrace();
+                return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Parsing error"); //$NON-NLS-1$
+            } catch (Throwable e) {
+                e.printStackTrace();
+                return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Unknown error"); //$NON-NLS-1$
+            }
+
+            boolean docChanged = false;
+            NodeList nodes = doc.getElementsByTagName(parent.getNodeName());
+            for(int i = 0; i < nodes.getLength(); i++) {
+                if(nodes.item(i).getNodeName().equals(parent.getNodeName())) {
+                    //remove the node
+                    Node parentNode = nodes.item(i);
+                    NodeList parentChildrenNodes = parentNode.getChildNodes();
+                    boolean found = false;
+                    for(int j = 0; j < parentChildrenNodes.getLength(); j++) {
+                        if(parentChildrenNodes.item(j).isEqualNode(oldNode)) {
+                            found = true;
+                            parentNode.removeChild(parentChildrenNodes.item(j));
+                            docChanged = true;
+                            break;
+                        }
+                    }
+                    if(found) {
+                        break;
+                    }
+                }
+            }
+
+            boolean originalDocChanged = false;
+            NodeList originalNodes = originalDoc.getElementsByTagName(parent.getNodeName());
+            for(int i = 0; i < originalNodes.getLength(); i++) {
+                if(originalNodes.item(i).getNodeName().equals(parent.getNodeName())) {
+                    Node parentNode = originalNodes.item(i);
+                    NodeList parentChildrenNodes = parentNode.getChildNodes();
+                    boolean found = false;
+                    for(int j = 0; j < parentChildrenNodes.getLength(); j++) {
+                        if(parentChildrenNodes.item(j).isEqualNode(oldNode)) {
+                            found = true;
+                            parentNode.removeChild(parentChildrenNodes.item(j));
+                            originalDocChanged = true;
+                            break;
+                        }
+                    }
+                    if(found) {
+                        break;
+                    }
+                }
+            }
+            if(applyChanges) {
+                try {
+                    if(docChanged) {
+                        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+                        Transformer transformer = transformerFactory.newTransformer();
+                        DOMSource source = new DOMSource(doc);
+                        StreamResult result = new StreamResult(new File(xmlFile.getAbsolutePath()));
+                        transformer.transform(source, result);
+                    }
+
+                    if(originalDocChanged) {
+                        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+                        Transformer transformer = transformerFactory.newTransformer();
+                        DOMSource source = new DOMSource(originalDoc);
+                        StreamResult result = new StreamResult(new File(originalFile.getAbsolutePath()));
+                        transformer.transform(source, result);
+                    }
+                } catch(Throwable e) {
+                    e.printStackTrace();
+                    return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Error when writing in files"); //$NON-NLS-1$
+                }
+            }
+            return Status.OK_STATUS;
+        }
+        return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "The file is not valid"); //$NON-NLS-1$
+    }
+
+    /**
+     * @param root The root to count his children
+     * @return The number of children + 1 (the root)
+     * @since 1.0
+     */
+    public static int getNodeCount(Node root) {
+        int count = 0;
+        if(root != null) {
+            NodeList children = root.getChildNodes();
+            count = 1;
+            if(children.getLength() > 0) {
+                for(int i = 0; i < children.getLength(); i++) {
+                    if(children.item(i).getNodeName() != "#text") { //$NON-NLS-1$
+                        count += getNodeCount(children.item(i));
+                    }
+                }
+            }
+        }
+        return count;
+    }
+
+    /**
+     * @param file The file in the runtime folder
+     * @return The original file of the copy, or <code>null</code> if not found
+     * @since 1.0
+     */
+    public static File getOriginalXmlFile(File file) {
+        /*
+         * FIXME Importing for the first time an XML file
+         * will save his original path in the map declare above.
+         * On the other hand, if the file is already loaded
+         * (from the previous execution), then the original path
+         * have never been save. This function will return <code>null</code>
+         * in this case.
+         */
+        File original = xmlFiles.get(file);
+
+        return original == null ? null:original;
+    }
+
+    /**
+     * @param file
+     *              The file to verify
+     * @return
+     *              Whether the file is present in the xml_files folder
+     * @since 1.0
+     */
+    public static boolean xmlFileIsActive(File file) {
+        // Get the active XML Analysis
+        File activeXMLFolder = new File(XmlUtils.getXmlFilesPath().toString());
+        File[] activeXMLs = activeXMLFolder.listFiles();
+
+        if(!xmlValidate(file).isOK()) {
+            return false;
+        }
+
+        // Validate the file
+        boolean valid = false;
+        for(int i = 0; i < activeXMLs.length; i++) {
+            if(activeXMLs[i].getName().equals(file.getName()))
+            {
+                valid = true;
+                break;
+            }
+        }
+        return valid;
+    }
+
+    /**
+     * This function shall not be used anywhere except for
+     * {@link Activator#stop(BundleContext)} method.
+     * @since 1.0
+     *
+     */
+    public static void clearXmlDirectory() {
+        File file = getXmlFilesPath().toFile();
+        if(file != null) {
+            File[] files = file.listFiles();
+            for(int i = 0; i < files.length; i++)
+            {
+                files[i].delete();
+            }
+            file.delete();
+        }
+    }
 }
