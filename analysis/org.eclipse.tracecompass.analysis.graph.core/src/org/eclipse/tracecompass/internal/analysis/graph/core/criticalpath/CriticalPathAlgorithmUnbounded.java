@@ -96,12 +96,12 @@ public class CriticalPathAlgorithmUnbounded extends AbstractCriticalPathAlgorith
                 Collections.reverse(links);
                 stiches(criticalPath, graph, nextEdge, links);
                 break;
-            case EPS:
+            case EPSILON:
                 if (nextEdge.getDuration() != 0) {
                     throw new RuntimeException("epsilon duration is not zero " + nextEdge); //$NON-NLS-1$
                 }
                 break;
-            case DEFAULT:
+            case BLANK:
                 throw new RuntimeException("Illegal link type " + nextEdge.getType()); //$NON-NLS-1$
             case UNKNOWN:
             default:
@@ -129,8 +129,8 @@ public class CriticalPathAlgorithmUnbounded extends AbstractCriticalPathAlgorith
             return;
         }
         TmfEdge prevEdge = anchor.getEdge(EdgeDirection.INCOMING_HORIZONTAL_EDGE);
-        if (first.getVertexFrom().compareTo(anchor) < 0 && prevEdge != null) {
-            while ((first.getVertexFrom().compareTo(anchor) < 0) && prevEdge != null) {
+        if (first.getVertexFrom().compareTimestamps(anchor) < 0 && prevEdge != null) {
+            while ((first.getVertexFrom().compareTimestamps(anchor) < 0) && prevEdge != null) {
                 criticalPath.removeTail(currentActor);
                 anchor = prevEdge.getVertexFrom();
                 prevEdge = anchor.getEdge(EdgeDirection.INCOMING_HORIZONTAL_EDGE);
@@ -151,7 +151,7 @@ public class CriticalPathAlgorithmUnbounded extends AbstractCriticalPathAlgorith
             // check connectivity
             if (prev != null && prev.getVertexTo() != link.getVertexFrom()) {
                 anchor = copyLink(criticalPath, graph, anchor, prev.getVertexTo(), link.getVertexFrom(),
-                        prev.getVertexTo().getTs(), EdgeType.DEFAULT);
+                        prev.getVertexTo().getTs(), EdgeType.BLANK);
             }
             anchor = copyLink(criticalPath, graph, anchor, link.getVertexFrom(), link.getVertexTo(),
                     link.getVertexTo().getTs(), link.getType());
@@ -173,7 +173,7 @@ public class CriticalPathAlgorithmUnbounded extends AbstractCriticalPathAlgorith
         subPath.add(nextEdge);
         while (nextEdge != null) {
             TmfVertex node = nextEdge.getVertexFrom();
-            if (node.compareTo(bound) <= 0) {
+            if (node.compareTimestamps(bound) <= 0) {
                 break;
             }
             // prefer a path that converges

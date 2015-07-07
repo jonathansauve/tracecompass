@@ -103,7 +103,7 @@ public abstract class AbstractCriticalPathAlgorithm implements ICriticalPathAlgo
                 return currentVertex;
             }
             TmfEdge edge = currentVertex.getEdge(dir);
-            if (edge == null || edge.getType() != TmfEdge.EdgeType.EPS) {
+            if (edge == null || edge.getType() != TmfEdge.EdgeType.EPSILON) {
                 break;
             }
             currentVertex = TmfVertex.getNeighborFromEdge(edge, dir);

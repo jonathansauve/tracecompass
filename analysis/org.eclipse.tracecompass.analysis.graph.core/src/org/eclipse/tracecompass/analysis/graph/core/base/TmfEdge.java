@@ -59,11 +59,11 @@ public class TmfEdge {
          * Special edge, so it is possible to have two vertices at the same
          * timestamp
          */
-        EPS,
+        EPSILON,
         /** Unknown edge */
         UNKNOWN,
         /** Default type for an edge */
-        DEFAULT,
+        BLANK,
         /** Worker is running */
         RUNNING,
         /** Worker is blocked */
@@ -98,7 +98,7 @@ public class TmfEdge {
     public TmfEdge(TmfVertex from, TmfVertex to) {
         this.fVertexFrom = from;
         this.fVertexTo = to;
-        this.fType = EdgeType.DEFAULT;
+        this.fType = EdgeType.BLANK;
     }
 
     /*

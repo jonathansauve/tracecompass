@@ -18,11 +18,13 @@ import java.util.List;
 import java.util.Stack;
 
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.tracecompass.analysis.graph.core.base.TmfGraphException;
 import org.eclipse.tracecompass.analysis.graph.core.base.IGraphWorker;
 import org.eclipse.tracecompass.analysis.graph.core.base.TmfEdge;
 import org.eclipse.tracecompass.analysis.graph.core.base.TmfGraph;
 import org.eclipse.tracecompass.analysis.graph.core.base.TmfVertex;
 import org.eclipse.tracecompass.analysis.graph.core.base.TmfVertex.EdgeDirection;
+import org.eclipse.tracecompass.internal.analysis.graph.core.Activator;
 
 /**
  * Critical path bounded algorithm: backward resolution of blockage limited to
@@ -59,7 +61,7 @@ public class CriticalPathAlgorithmBounded extends AbstractCriticalPathAlgorithm 
         /* Calculate path starting from the object the start vertex belongs to */
         IGraphWorker parent = graph.getParentOf(start);
         if (parent == null) {
-            throw new NullPointerException();
+            throw new TmfGraphException("the vertex must belong to a worker"); //$NON-NLS-1$
         }
         criticalPath.add(parent, new TmfVertex(start));
         TmfVertex currentVertex = start;
@@ -99,7 +101,7 @@ public class CriticalPathAlgorithmBounded extends AbstractCriticalPathAlgorithm 
                     throw new NullPointerException();
                 }
                 if (parentTo != parent) {
-                    System.err.println("no, the parents of horizontal edges are not always identical... shouldn't they be?"); //$NON-NLS-1$
+                    Activator.getInstance().logWarning("horizontal edges should belong to the same worker"); //$NON-NLS-1$
                 }
                 criticalPath.append(parentTo, new TmfVertex(nextEdge.getVertexTo()), nextEdge.getType());
                 break;
@@ -109,13 +111,13 @@ public class CriticalPathAlgorithmBounded extends AbstractCriticalPathAlgorithm 
                 Collections.reverse(links);
                 glue(criticalPath, graph, currentVertex, links);
                 break;
-            case EPS:
+            case EPSILON:
                 if (nextEdge.getDuration() != 0) {
-                    throw new RuntimeException("epsilon duration is not zero " + nextEdge); //$NON-NLS-1$
+                    throw new TmfGraphException("epsilon duration is not zero " + nextEdge); //$NON-NLS-1$
                 }
                 break;
-            case DEFAULT:
-                throw new RuntimeException("Illegal link type " + nextEdge.getType()); //$NON-NLS-1$
+            case BLANK:
+                throw new TmfGraphException("Illegal link type " + nextEdge.getType()); //$NON-NLS-1$
             case UNKNOWN:
             default:
                 break;
@@ -167,7 +169,7 @@ public class CriticalPathAlgorithmBounded extends AbstractCriticalPathAlgorithm 
             criticalPath.add(objSrc, anchor);
             b1.linkVertical(anchor);
             /* fill any gap with UNKNOWN */
-            if (lnk.getVertexFrom().compareTo(anchor) > 0) {
+            if (lnk.getVertexFrom().compareTimestamps(anchor) > 0) {
                 anchor = new TmfVertex(lnk.getVertexFrom());
                 TmfEdge edge = criticalPath.append(objSrc, anchor);
                 if (edge == null) {
@@ -183,7 +185,7 @@ public class CriticalPathAlgorithmBounded extends AbstractCriticalPathAlgorithm 
             // check connectivity
             if (prev != null && prev.getVertexTo() != link.getVertexFrom()) {
                 anchor = copyLink(criticalPath, graph, anchor, prev.getVertexTo(), link.getVertexFrom(),
-                        prev.getVertexTo().getTs(), TmfEdge.EdgeType.DEFAULT);
+                        prev.getVertexTo().getTs(), TmfEdge.EdgeType.BLANK);
             }
             anchor = copyLink(criticalPath, graph, anchor, link.getVertexFrom(), link.getVertexTo(),
                     link.getVertexTo().getTs(), link.getType());
@@ -221,13 +223,13 @@ public class CriticalPathAlgorithmBounded extends AbstractCriticalPathAlgorithm 
         subPath.add(down);
         TmfVertex vertexFrom = down.getVertexFrom();
 
-        TmfVertex currentBound = bound.compareTo(blocking.getVertexFrom()) < 0 ? blocking.getVertexFrom() : bound;
+        TmfVertex currentBound = bound.compareTimestamps(blocking.getVertexFrom()) < 0 ? blocking.getVertexFrom() : bound;
 
         Stack<TmfVertex> stack = new Stack<>();
-        while (vertexFrom != null && vertexFrom.compareTo(currentBound) > 0) {
+        while (vertexFrom != null && vertexFrom.compareTimestamps(currentBound) > 0) {
             /* shortcut for down link that goes beyond the blocking */
             TmfEdge inVerticalEdge = vertexFrom.getEdge(EdgeDirection.INCOMING_VERTICAL_EDGE);
-            if (inVerticalEdge != null && inVerticalEdge.getVertexFrom().compareTo(currentBound) <= 0) {
+            if (inVerticalEdge != null && inVerticalEdge.getVertexFrom().compareTimestamps(currentBound) <= 0) {
                 subPath.add(inVerticalEdge);
                 break;
             }

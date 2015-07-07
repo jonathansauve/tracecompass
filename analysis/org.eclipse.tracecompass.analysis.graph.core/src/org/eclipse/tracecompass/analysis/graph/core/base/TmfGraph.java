@@ -13,12 +13,13 @@
 
 package org.eclipse.tracecompass.analysis.graph.core.base;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Stack;
 import java.util.concurrent.CountDownLatch;
 
 import org.eclipse.jdt.annotation.Nullable;
@@ -82,7 +83,7 @@ public class TmfGraph {
      * @return The edge constructed
      */
     public @Nullable TmfEdge append(IGraphWorker worker, TmfVertex vertex) {
-        return append(worker, vertex, EdgeType.DEFAULT);
+        return append(worker, vertex, EdgeType.BLANK);
     }
 
     /**
@@ -125,7 +126,7 @@ public class TmfGraph {
      * @return The newly created edge
      */
     public TmfEdge link(TmfVertex from, TmfVertex to) {
-        return link(from, to, EdgeType.DEFAULT);
+        return link(from, to, EdgeType.BLANK);
     }
 
     /**
@@ -332,8 +333,8 @@ public class TmfGraph {
         if (start == null) {
             return;
         }
-        Stack<TmfVertex> stack = new Stack<>();
-        HashSet<TmfVertex> visited = new HashSet<>();
+        Deque<TmfVertex> stack = new ArrayDeque<>();
+        Set<TmfVertex> visited = new HashSet<>();
         stack.add(start);
         while (!stack.isEmpty()) {
             TmfVertex curr = NonNullUtils.checkNotNull(stack.pop());

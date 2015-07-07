@@ -13,8 +13,6 @@
 
 package org.eclipse.tracecompass.analysis.graph.core.base;
 
-import java.util.Comparator;
-
 import org.eclipse.jdt.annotation.Nullable;
 
 /**
@@ -23,63 +21,44 @@ import org.eclipse.jdt.annotation.Nullable;
  * @author Francis Giraldeau
  * @author Geneviève Bastien
  */
-public class TmfVertex implements Comparable<TmfVertex> {
+public class TmfVertex {
 
     private static long count = 0;
 
     /**
-     * Describe the four edges coming in and out of a vertex
+     * Describe the four edges coming in and out of a vertex. This data
+     * structure can be viewed as a 2D lattice or mesh. There are two incoming
+     * edges (from the left and bottom vertices), and two outgoing edges (to the
+     * upper and right vertices).
+     *
+     * <pre>
+     *                  vertical out
+     *                      ^
+     *                      |
+     * horizontal in ----> [v] ----> horizontal out
+     *                      ^
+     *                      |
+     *                  vertical in
+     * </pre>
      */
     public enum EdgeDirection {
         /**
          * Constant for the outgoing vertical edge (to other object)
          */
-        OUTGOING_VERTICAL_EDGE,
-        /**
-         * Constant for the incoming vertical edge (from other object)
-         */
-        INCOMING_VERTICAL_EDGE,
-        /**
-         * Constant for the outgoing horizontal edge (to same object)
-         */
-        OUTGOING_HORIZONTAL_EDGE,
-        /**
-         * Constant for the incoming horizontal edge (from same object)
-         */
+        OUTGOING_VERTICAL_EDGE, /**
+                                 * Constant for the incoming vertical edge (from
+                                 * other object)
+                                 */
+        INCOMING_VERTICAL_EDGE, /**
+                                 * Constant for the outgoing horizontal edge (to
+                                 * same object)
+                                 */
+        OUTGOING_HORIZONTAL_EDGE, /**
+                                   * Constant for the incoming horizontal edge
+                                   * (from same object)
+                                   */
         INCOMING_HORIZONTAL_EDGE
     }
-
-    /**
-     * Compare vertices by ascending timestamps
-     */
-    public static Comparator<TmfVertex> ascending = new Comparator<TmfVertex>() {
-        @Override
-        public int compare(@Nullable TmfVertex v1, @Nullable TmfVertex v2) {
-            if (v1 == null) {
-                return 1;
-            }
-            if (v2 == null) {
-                return -1;
-            }
-            return v1.getTs() > v2.getTs() ? 1 : (v1.getTs() == v2.getTs() ? 0 : -1);
-        }
-    };
-
-    /**
-     * Compare vertices by descending timestamps
-     */
-    public static Comparator<TmfVertex> descending = new Comparator<TmfVertex>() {
-        @Override
-        public int compare(@Nullable TmfVertex v1, @Nullable TmfVertex v2) {
-            if (v1 == null) {
-                return -1;
-            }
-            if (v2 == null) {
-                return 1;
-            }
-            return v1.getTs() < v2.getTs() ? 1 : (v1.getTs() == v2.getTs() ? 0 : -1);
-        }
-    };
 
     private @Nullable TmfEdge fOutgoingVertical = null;
     private @Nullable TmfEdge fIncomingVertical = null;
@@ -102,8 +81,8 @@ public class TmfVertex implements Comparable<TmfVertex> {
      *            The vertex's timestamp
      */
     public TmfVertex(final long ts) {
-        this.fTimestamp = ts;
-        this.fId = count++;
+        fTimestamp = ts;
+        fId = count++;
     }
 
     /**
@@ -125,8 +104,8 @@ public class TmfVertex implements Comparable<TmfVertex> {
      *            The timestamp of this new node
      */
     public TmfVertex(TmfVertex node, final long ts) {
-        this.fTimestamp = ts;
-        this.fId = count++;
+        fTimestamp = ts;
+        fId = count++;
         fOutgoingVertical = node.fOutgoingVertical;
         fIncomingVertical = node.fIncomingVertical;
         fOutgoingHorizontal = node.fOutgoingHorizontal;
@@ -278,8 +257,15 @@ public class TmfVertex implements Comparable<TmfVertex> {
         }
     }
 
-    @Override
-    public int compareTo(@Nullable TmfVertex other) {
+    /**
+     * Compare vertices timestamps
+     *
+     * @param other
+     *            The vertex to compare
+     * @return 1, 0 or -1 if this vertex's timestamp is less, equal or greater
+     *         than the timestamp of the other vertex
+     */
+    public int compareTimestamps(@Nullable TmfVertex other) {
         if (other == null) {
             return 1;
         }

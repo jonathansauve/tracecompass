@@ -90,7 +90,7 @@ public class TmfGraphTest {
         fGraph.append(WORKER1, fV0);
         TmfEdge edge = fGraph.append(WORKER1, fV1);
         assertNotNull(edge);
-        assertEquals(EdgeType.DEFAULT, edge.getType());
+        assertEquals(EdgeType.BLANK, edge.getType());
         assertEquals(fV1, edge.getVertexTo());
         assertEquals(fV0, edge.getVertexFrom());
         assertEquals(fV1.getTs() - fV0.getTs(), edge.getDuration());
@@ -139,7 +139,7 @@ public class TmfGraphTest {
         TmfEdge edge = fGraph.link(fV0, fV1);
         assertEquals(fV1, edge.getVertexTo());
         assertEquals(fV0, edge.getVertexFrom());
-        assertEquals(EdgeType.DEFAULT, edge.getType());
+        assertEquals(EdgeType.BLANK, edge.getType());
         assertEquals(fV1.getTs() - fV0.getTs(), edge.getDuration());
 
         List<TmfVertex> list = fGraph.getNodesOf(WORKER1);
