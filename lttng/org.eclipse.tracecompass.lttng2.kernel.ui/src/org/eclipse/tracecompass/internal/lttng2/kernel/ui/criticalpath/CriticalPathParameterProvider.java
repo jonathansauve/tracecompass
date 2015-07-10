@@ -31,6 +31,7 @@ import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchPartReference;
+import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 
 /**
@@ -182,8 +183,17 @@ public class CriticalPathParameterProvider extends TmfAbstractAnalysisParamProvi
 
     private void registerListener() {
         final IWorkbench wb = PlatformUI.getWorkbench();
+        final IWorkbenchWindow win = wb.getActiveWorkbenchWindow();
+
+        /* IWorkbenchWindow is null if unit tests is run without UI */
+        if (win == null) {
+            return;
+        }
 
         final IWorkbenchPage activePage = wb.getActiveWorkbenchWindow().getActivePage();
+        if (activePage == null) {
+            return;
+        }
 
         /* Activate the update if critical path view visible */
         IViewPart view = activePage.findView(CriticalPathView.ID);
