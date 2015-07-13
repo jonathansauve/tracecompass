@@ -527,6 +527,13 @@ public class CriticalPathView extends AbstractTimeGraphView {
      */
     @TmfSignalHandler
     public void analysisStarted(TmfStartAnalysisSignal signal) {
+        /*
+         * FIXME: getTrace() may return null. This is not logical, because a
+         * trace must be opened if there is an analysis started.
+         */
+        if (getTrace() == null) {
+            return;
+        }
         if (!(signal.getAnalysisModule() instanceof CriticalPathModule)) {
             return;
         }
