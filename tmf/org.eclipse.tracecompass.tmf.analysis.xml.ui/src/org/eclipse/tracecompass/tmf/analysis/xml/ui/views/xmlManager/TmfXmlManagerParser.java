@@ -1,4 +1,4 @@
-package org.eclipse.tracecompass.tmf.ui.views.xmlManager;
+package org.eclipse.tracecompass.tmf.analysis.xml.ui.views.xmlManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,7 +23,6 @@ import org.xml.sax.SAXException;
  * @since 1.0
  *
  */
-@SuppressWarnings("restriction")
 public class TmfXmlManagerParser {
 
     private static List<Node> froot = new ArrayList<>();

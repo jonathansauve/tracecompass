@@ -1,4 +1,4 @@
-package org.eclipse.tracecompass.tmf.ui.views.xmlManager;
+package org.eclipse.tracecompass.tmf.analysis.xml.ui.views.xmlManager;
 
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.tracecompass.tmf.ui.views.TmfView;

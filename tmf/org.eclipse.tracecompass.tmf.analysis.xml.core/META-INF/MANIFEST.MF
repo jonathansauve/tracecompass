@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: %Bundle-Name
 Bundle-Vendor: %Bundle-Vendor
-Bundle-Version: 1.0.0.qualifier
+Bundle-Version: 2.0.0.qualifier
 Bundle-Localization: plugin
 Bundle-SymbolicName: org.eclipse.tracecompass.tmf.analysis.xml.core;singleton:=true
 Bundle-Activator: org.eclipse.tracecompass.internal.tmf.analysis.xml.core.Activator
@@ -18,6 +18,4 @@ Export-Package: org.eclipse.tracecompass.internal.tmf.analysis.xml.core;x-friend
  org.eclipse.tracecompass.tmf.analysis.xml.core.module,
  org.eclipse.tracecompass.tmf.analysis.xml.core.stateprovider
 Import-Package: org.eclipse.jface.dialogs,
- org.eclipse.swt.widgets,
- org.eclipse.tracecompass.internal.tmf.analysis.xml.ui.handler,
- org.eclipse.tracecompass.tmf.analysis.xml.ui.module
+ org.eclipse.swt.widgets

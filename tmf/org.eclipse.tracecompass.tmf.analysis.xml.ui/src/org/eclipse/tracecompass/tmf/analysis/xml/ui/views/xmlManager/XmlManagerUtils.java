@@ -1,4 +1,4 @@
-package org.eclipse.tracecompass.tmf.ui.views.xmlManager;
+package org.eclipse.tracecompass.tmf.analysis.xml.ui.views.xmlManager;
 
 /**
  * This class contains some utilities for the XmlManagerViewer.

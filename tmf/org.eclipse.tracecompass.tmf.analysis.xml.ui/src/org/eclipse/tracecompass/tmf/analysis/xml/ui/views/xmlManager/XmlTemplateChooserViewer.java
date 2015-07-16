@@ -1,4 +1,4 @@
-package org.eclipse.tracecompass.tmf.ui.views.xmlManager;
+package org.eclipse.tracecompass.tmf.analysis.xml.ui.views.xmlManager;
 
 import java.io.File;
 import java.util.ArrayList;

@@ -1,4 +1,4 @@
-package org.eclipse.tracecompass.tmf.ui.views.xmlManager;
+package org.eclipse.tracecompass.tmf.analysis.xml.ui.views.xmlManager;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -360,17 +360,13 @@ public class StateSystemPathBuilderViewer extends Dialog {
                 }
             }
 
-            @SuppressWarnings("null")
             private void setStateSystemAndAtributeTree(StateEntry entry) {
                 ss = null;
                 attTree = null;
                 StateSystemEntry ssEntry = null;
                 ITmfTreeViewerEntry current = entry;
-                while(ssEntry == null) {
+                while(current != null) {
                     current = current.getParent();
-                    if(current == null) {
-                        break;
-                    }
                     if(current instanceof StateSystemEntry) {
                         ssEntry = (StateSystemEntry) current;
                         break;

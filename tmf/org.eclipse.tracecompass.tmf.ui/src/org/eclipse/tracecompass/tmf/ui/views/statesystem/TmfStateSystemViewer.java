@@ -353,7 +353,7 @@ public class TmfStateSystemViewer extends AbstractTmfTreeViewer {
     }
 
     /**
-     * @since 1.0
+     * @since 2.0
      */
     @SuppressWarnings("javadoc")
     public static class StateSystemEntry extends TmfTreeViewerEntry {
@@ -370,7 +370,7 @@ public class TmfStateSystemViewer extends AbstractTmfTreeViewer {
     }
 
     /**
-     * @since 1.0
+     * @since 2.0
      */
     @SuppressWarnings("javadoc")
     public class StateEntry extends TmfTreeViewerEntry {

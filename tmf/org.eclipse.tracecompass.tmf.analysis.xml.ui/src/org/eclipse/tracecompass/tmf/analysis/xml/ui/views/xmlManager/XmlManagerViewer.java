@@ -1,4 +1,4 @@
-package org.eclipse.tracecompass.tmf.ui.views.xmlManager;
+package org.eclipse.tracecompass.tmf.analysis.xml.ui.views.xmlManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -103,12 +103,9 @@ public class XmlManagerViewer {
     /* Menu for subtree elements */
     private Menu ftreeMenu;
     private MenuItem editItem;
-    @SuppressWarnings("unused")
-    private MenuItem separatorItem1;
+    //private MenuItem separatorItem1;
     private MenuItem cloneItem;
     private MenuItem removeItem;
-    @SuppressWarnings("unused")
-    private MenuItem separatorItem2;
     private MenuItem copyItem;
     private MenuItem pasteItem;
     /* Map to keep the checked items */
@@ -305,7 +302,7 @@ public class XmlManagerViewer {
         editItem = new MenuItem(ftreeMenu, SWT.NONE);
         editItem.setText("Edit"); //$NON-NLS-1$
 
-        separatorItem1 = new MenuItem(ftreeMenu, SWT.SEPARATOR);
+        new MenuItem(ftreeMenu, SWT.SEPARATOR);
 
         cloneItem = new MenuItem(ftreeMenu, SWT.NONE);
         cloneItem.setText("Clone"); //$NON-NLS-1$
@@ -387,7 +384,7 @@ public class XmlManagerViewer {
                     }
                 });
 
-        separatorItem2 = new MenuItem(ftreeMenu, SWT.SEPARATOR);
+        new MenuItem(ftreeMenu, SWT.SEPARATOR);
 
         copyItem = new MenuItem(ftreeMenu, SWT.NONE);
         copyItem.setText("Copy"); //$NON-NLS-1$
@@ -611,8 +608,7 @@ public class XmlManagerViewer {
             }
         });
 
-        @SuppressWarnings("unused")
-        Label separator = new Label(group3, SWT.HORIZONTAL | SWT.SEPARATOR | SWT.FILL);
+        //Label separator = new Label(group3, SWT.HORIZONTAL | SWT.SEPARATOR | SWT.FILL);
 
         Label selectedFiles = new Label(group3, SWT.NONE);
         selectedFiles.setText("Selected files:"); //$NON-NLS-1$

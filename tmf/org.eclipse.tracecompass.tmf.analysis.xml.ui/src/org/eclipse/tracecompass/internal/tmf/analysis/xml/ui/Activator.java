@@ -14,6 +14,7 @@ package org.eclipse.tracecompass.internal.tmf.analysis.xml.ui;
 
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.tracecompass.tmf.analysis.xml.core.module.XmlUtils;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
@@ -47,6 +48,12 @@ public class Activator extends AbstractUIPlugin {
     public void stop(BundleContext context) throws Exception {
         setDefault(null);
         super.stop(context);
+        try {
+            XmlUtils.clearXmlDirectory();
+        } catch (Throwable e) {
+            //TODO Catch nullPointerException : when the xml_files folder
+            // have never been initialized
+        }
     }
 
     /**

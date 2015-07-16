@@ -20,7 +20,6 @@ import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.ImageRegistry;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.tracecompass.tmf.analysis.xml.core.module.XmlUtils;
 import org.eclipse.tracecompass.tmf.core.event.ITmfEvent;
 import org.eclipse.tracecompass.tmf.ui.TmfUiRefreshHandler;
 import org.eclipse.tracecompass.tmf.ui.project.model.TmfExperimentElement;
@@ -98,12 +97,6 @@ public class Activator extends AbstractUIPlugin {
 
     @Override
     public void stop(BundleContext context) throws Exception {
-        try {
-            XmlUtils.clearXmlDirectory();
-        } catch (Throwable e) {
-            //TODO Catch nullPointerException : when the xml_files folder
-            // have never been initialized
-        }
         TmfUiTracer.stop();
         TmfUiRefreshHandler.getInstance().dispose();
 

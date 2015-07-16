@@ -48,7 +48,6 @@ import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.core.Activator;
 import org.eclipse.tracecompass.tmf.analysis.xml.core.stateprovider.TmfXmlStrings;
-import org.eclipse.tracecompass.tmf.analysis.xml.ui.module.XmlAnalysisModuleSource;
 import org.eclipse.tracecompass.tmf.core.util.Pair;
 import org.osgi.framework.BundleContext;
 import org.w3c.dom.Document;
@@ -175,7 +174,7 @@ public class XmlUtils {
      *
      * @param toDelete The XML file to delete
      * @return Whether the file was successfully deleted
-     * @since 1.0
+     * @since 2.0
      */
     public static IStatus removeXmlFile(File toDelete)
     {
@@ -184,7 +183,11 @@ public class XmlUtils {
         if(valid) {
             xmlFiles.remove(toDelete);
             toDelete.delete();
-            XmlAnalysisModuleSource.notifyModuleChange();
+            // FIXME: reverse the dependency here. The XmlAnalysisModuleSource
+            // should register itself as listener of this object. Then, call the
+            // callback method. The listener interface will be in the core
+            // package, and the UI will depends on it.
+            // XmlAnalysisModuleSource.notifyModuleChange();
             return Status.OK_STATUS;
         }
         return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "The XML file is not an active XML Analysis"); //$NON-NLS-1$
@@ -293,7 +296,7 @@ public class XmlUtils {
      *              The path of the file to search in
      * @return
      *              The analysis ID, or empty string if not found
-     * @since 1.0
+     * @since 2.0
      */
     public static String getAnalysisId(String filePath) {
         if (filePath == null) {
@@ -353,7 +356,7 @@ public class XmlUtils {
      * @throws SAXException
      * @throws TransformerException
      * @return Whether the attribute was successfully setted
-     * @since 1.0
+     * @since 2.0
      */
     @SuppressWarnings("javadoc")
     public static IStatus setNewAttribute(File copyFile, File originalFile, Node node, String attribute, String value) throws ParserConfigurationException, SAXException, IOException, TransformerException {
@@ -421,7 +424,7 @@ public class XmlUtils {
      * @return
      *              A pair that contains both status of the creation and the new node (<code>parent</code>
      *              if the returned status isn't <code>Status.OK_STATUS</code>)
-     * @since 1.0
+     * @since 2.0
      */
     @SuppressWarnings("null")
     public static Pair<IStatus, Node> createNewNode(String nodeName, @NonNull Node parent, File xmlFile) {
@@ -530,7 +533,7 @@ public class XmlUtils {
      *              Whether we apply the changes to the file or not
      * @return
      *              Whether the element was successfully appended
-     * @since 1.0
+     * @since 2.0
      */
     public static IStatus appendElementInFile(Node newNode, Node parent, File xmlFile, boolean applyChanges) {
         boolean valid = xmlFileIsActive(xmlFile);
@@ -661,7 +664,7 @@ public class XmlUtils {
      *              Whether we apply the changes to the file or not
      * @return
      *              Whether the element was successfully removed
-     * @since 1.0
+     * @since 2.0
      */
     public static IStatus removeElementFromFile(Node oldNode, Node parent, File xmlFile, boolean applyChanges) {
         boolean valid = xmlFileIsActive(xmlFile);
@@ -773,7 +776,7 @@ public class XmlUtils {
     /**
      * @param root The root to count his children
      * @return The number of children + 1 (the root)
-     * @since 1.0
+     * @since 2.0
      */
     public static int getNodeCount(Node root) {
         int count = 0;
@@ -794,7 +797,7 @@ public class XmlUtils {
     /**
      * @param file The file in the runtime folder
      * @return The original file of the copy, or <code>null</code> if not found
-     * @since 1.0
+     * @since 2.0
      */
     public static File getOriginalXmlFile(File file) {
         /*
@@ -815,7 +818,7 @@ public class XmlUtils {
      *              The file to verify
      * @return
      *              Whether the file is present in the xml_files folder
-     * @since 1.0
+     * @since 2.0
      */
     public static boolean xmlFileIsActive(File file) {
         // Get the active XML Analysis
@@ -841,7 +844,7 @@ public class XmlUtils {
     /**
      * This function shall not be used anywhere except for
      * {@link Activator#stop(BundleContext)} method.
-     * @since 1.0
+     * @since 2.0
      *
      */
     public static void clearXmlDirectory() {
