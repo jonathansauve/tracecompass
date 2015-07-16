@@ -10,7 +10,7 @@ import org.eclipse.tracecompass.tmf.ui.views.TmfView;
  */
 public class XmlManagerView extends TmfView {
 
-    private final static String ID = "org.eclipse.tracecompass.tmf.ui.views.xmlManager"; //$NON-NLS-1$
+    private final static String ID = "org.eclipse.tracecompass.tmf.analysis.xml.ui.views.xmlManager"; //$NON-NLS-1$
     XmlManagerViewer fViewer;
     /**
      * Constructor
