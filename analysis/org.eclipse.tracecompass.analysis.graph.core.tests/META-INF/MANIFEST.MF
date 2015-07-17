@@ -15,6 +15,8 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.core.resources,
  org.eclipse.tracecompass.common.core,
  org.eclipse.tracecompass.analysis.graph.core
-Import-Package: org.junit.runner
+Import-Package: org.eclipse.tracecompass.tmf.ctf.core.event,
+ org.eclipse.tracecompass.tmf.ctf.core.trace,
+ org.junit.runner
 Export-Package: org.eclipse.tracecompass.analysis.graph.core.tests
 
