@@ -59,9 +59,9 @@ public class TmfGraphBuilderModuleTest {
      *
      * @return
      */
-    private TmfGraphBuilderModule getModule() {
+    private TmfGraphBuilderModule getStubModule(String stubTracePath) {
         ITmfTrace trace = new TmfXmlTraceStub();
-        IPath filePath = Activator.getAbsoluteFilePath(STUB_TRACE_FILE);
+        IPath filePath = Activator.getAbsoluteFilePath(stubTracePath);
         IStatus status = trace.validate(null, filePath.toOSString());
         if (!status.isOK()) {
             fail(status.getException().getMessage());
@@ -87,7 +87,7 @@ public class TmfGraphBuilderModuleTest {
     @Test
     public void testBuildGraph() {
 
-        TmfGraphBuilderModule module = getModule();
+        TmfGraphBuilderModule module = getStubModule(STUB_TRACE_FILE);
         module.schedule();
         module.waitForCompletion();
 
