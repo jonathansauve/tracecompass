@@ -79,6 +79,8 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 /**
+ * The view for the XML Manager.
+ * TODO make the XML manager more MVC (Model, View, Controller)
  * @author Jonathan Sauvé
  * @since 1.0
  *
@@ -103,9 +105,12 @@ public class XmlManagerViewer {
     /* Menu for subtree elements */
     private Menu ftreeMenu;
     private MenuItem editItem;
-    //private MenuItem separatorItem1;
+    @SuppressWarnings("unused")
+    private MenuItem separatorItem1;
     private MenuItem cloneItem;
     private MenuItem removeItem;
+    @SuppressWarnings("unused")
+    private MenuItem separatorItem2;
     private MenuItem copyItem;
     private MenuItem pasteItem;
     /* Map to keep the checked items */
@@ -125,12 +130,6 @@ public class XmlManagerViewer {
     private Button mergeFiles;
     private Button removeXml;
 
-    /** GridLayouts */
-    private final GridLayout grid1 = new GridLayout(1, false);
-    private final GridLayout grid2 = new GridLayout(2, false);
-    private final GridLayout grid3 = new GridLayout(3, false);
-    private final GridLayout grid4 = new GridLayout(4, false);
-
     /** Keys to retrieve saved objects */
     private static final String userDataFileKey = "userFile"; //$NON-NLS-1$
     private static final String nodeKey = "node"; //$NON-NLS-1$
@@ -148,27 +147,23 @@ public class XmlManagerViewer {
         fparent = parent;
 
         Composite fComposite = new Composite(parent, SWT.NONE);
-        grid1.marginHeight = 0;
-        grid1.marginWidth = 0;
-        grid1.horizontalSpacing = 0;
-        grid1.verticalSpacing = 0;
-        fComposite.setLayout(grid1);
+        fComposite.setLayout(createGridLayout(1, 0, 0));
 
         final GridData gd = new GridData(SWT.FILL, SWT.FILL, true, true);
 
         sash = new SashForm(fComposite, SWT.HORIZONTAL);
-        sash.setLayout(grid1);
+        sash.setLayout(createGridLayout(1, 0, 0));
         sash.setLayoutData(gd);
 
         /** Initialization of group 1 - Active XMLs Analysis */
 
         group1 = new Group(sash, SWT.SHADOW_ETCHED_IN);
         group1.setText("Active XMLs Analysis"); //$NON-NLS-1$
-        group1.setLayout(grid1);
+        group1.setLayout(createGridLayout(1, 0, 0));
         group1.setLayoutData(gd);
 
         ftree = new Tree(group1, SWT.CHECK);
-        ftree.setLayout(grid1);
+        ftree.setLayout(createGridLayout(1, 0, 0));
         ftree.setLayoutData(gd);
 
         /* Initialize the tree */
@@ -302,7 +297,7 @@ public class XmlManagerViewer {
         editItem = new MenuItem(ftreeMenu, SWT.NONE);
         editItem.setText("Edit"); //$NON-NLS-1$
 
-        new MenuItem(ftreeMenu, SWT.SEPARATOR);
+        separatorItem1 = new MenuItem(ftreeMenu, SWT.SEPARATOR);
 
         cloneItem = new MenuItem(ftreeMenu, SWT.NONE);
         cloneItem.setText("Clone"); //$NON-NLS-1$
@@ -384,7 +379,7 @@ public class XmlManagerViewer {
                     }
                 });
 
-        new MenuItem(ftreeMenu, SWT.SEPARATOR);
+        separatorItem2 = new MenuItem(ftreeMenu, SWT.SEPARATOR);
 
         copyItem = new MenuItem(ftreeMenu, SWT.NONE);
         copyItem.setText("Copy"); //$NON-NLS-1$
@@ -465,26 +460,26 @@ public class XmlManagerViewer {
         /** Initialization of group 2 - Properties */
         group2 = new Group(sash, SWT.V_SCROLL);
         group2.setText("Properties"); //$NON-NLS-1$
-        group2.setLayout(grid1);
+        group2.setLayout(createGridLayout(1, 0, 0));
         group2.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, false));
 
         sc = new ScrolledComposite(group2, SWT.V_SCROLL | SWT.H_SCROLL);
-        sc.setLayout(grid1);
+        sc.setLayout(createGridLayout(1, 0, 0));
         sc.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
         groupProperties = new Composite(sc, SWT.NONE);
-        groupProperties.setLayout(grid1);
+        groupProperties.setLayout(createGridLayout(1, 0, 0));
         groupProperties.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
         /** Initialization of group 3 - Actions */
 
         group3 = new Group(sash, SWT.SHADOW_ETCHED_IN);
         group3.setText("Actions"); //$NON-NLS-1$
-        group3.setLayout(grid1);
+        group3.setLayout(createGridLayout(1, 0, 0));
         group3.setLayoutData(gd);
 
         Composite importCreate = new Composite(group3, SWT.NONE);
-        importCreate.setLayout(grid2);
+        importCreate.setLayout(createGridLayout(2, 0, 0));
 
         Button importXml = new Button(importCreate, SWT.PUSH);
         importXml.setText("Import XML Analysis"); //$NON-NLS-1$
@@ -608,21 +603,17 @@ public class XmlManagerViewer {
             }
         });
 
-        //Label separator = new Label(group3, SWT.HORIZONTAL | SWT.SEPARATOR | SWT.FILL);
+        @SuppressWarnings("unused")
+        Label separator = new Label(group3, SWT.HORIZONTAL | SWT.SEPARATOR | SWT.FILL);
 
         Label selectedFiles = new Label(group3, SWT.NONE);
         selectedFiles.setText("Selected files:"); //$NON-NLS-1$
 
         selectedFilesComposite = new Composite(group3, SWT.NONE);
-        grid1.marginBottom = 5;
-        grid1.marginLeft = 10;
-        grid1.marginHeight = 5;
-        selectedFilesComposite.setLayout(grid1);
-        grid1.marginBottom = 0;
-        grid1.marginLeft = 0;
+        selectedFilesComposite.setLayout(createGridLayout(1, 15, 5));
 
         removeMergeComposite = new Composite(group3, SWT.NONE);
-        removeMergeComposite.setLayout(grid2);
+        removeMergeComposite.setLayout(createGridLayout(2, 0, 0));
 
         removeXml = new Button(removeMergeComposite, SWT.PUSH);
         removeXml.setText("Remove XML Analysis"); //$NON-NLS-1$
@@ -780,31 +771,22 @@ public class XmlManagerViewer {
      */
     private void updatePropertiesOnInsert(final Node root)
     {
-        grid1.marginHeight = 5;
-        grid1.marginWidth = 5;
-        grid2.marginHeight = 5;
-        grid2.marginWidth = 5;
-        grid3.marginHeight = 5;
-        grid3.marginWidth = 5;
-        grid4.marginHeight = 5;
-        grid4.marginWidth = 5;
-
         Composite group = new Composite(groupProperties, SWT.NONE);
-        group.setLayout(grid1);
+        group.setLayout(createGridLayout(1, 5, 5));
         group.setLayoutData(new GridData(SWT.BEGINNING, SWT.BEGINNING, true, true));
         group.setData(nodeKey, root);
 
         if (root.getNodeName() == TmfXmlUiStrings.TIME_GRAPH_VIEW)
         {
             Composite titleComposite = new Composite(group, SWT.NONE);
-            titleComposite.setLayout(grid1);
+            titleComposite.setLayout(createGridLayout(1, 5, 5));
             titleComposite.setLayoutData(new GridData(SWT.BEGINNING, SWT.BEGINNING, false, false));
 
             Label title = new Label(titleComposite, SWT.NONE);
             title.setText("-- TIME GRAPH VIEW SECTION --"); //$NON-NLS-1$
 
             Composite assFileComp = new Composite(group, SWT.NONE);
-            assFileComp.setLayout(grid1);
+            assFileComp.setLayout(createGridLayout(1, 5, 5));
             assFileComp.setLayoutData(new GridData(SWT.BEGINNING, SWT.BEGINNING, true, true));
 
             Label associateFile = new Label(assFileComp, SWT.NONE);
@@ -812,7 +794,7 @@ public class XmlManagerViewer {
             associateFile.setText("File: " + ((File)(root.getUserData(userDataFileKey))).getName()); //$NON-NLS-1$
 
             Composite IDAndIDValue = new Composite(group, SWT.NONE);
-            IDAndIDValue.setLayout(grid2);
+            IDAndIDValue.setLayout(createGridLayout(2, 5, 5));
 
             Label ID = new Label(IDAndIDValue, SWT.NONE);
             ID.setText("ID: "); //$NON-NLS-1$
@@ -841,7 +823,7 @@ public class XmlManagerViewer {
                         if (headChilds.item(j).getNodeName().equals(TmfXmlStrings.ANALYSIS))
                         {
                             Composite analysisIDComposite = new Composite(group, SWT.NONE);
-                            analysisIDComposite.setLayout(grid1);
+                            analysisIDComposite.setLayout(createGridLayout(1, 5, 5));
 
                             Label analysisID = new Label(analysisIDComposite, SWT.NONE);
                             analysisID.setText("Analysis ID: " + headChilds.item(j).getAttributes().getNamedItem(TmfXmlStrings.ID).getNodeValue()); //$NON-NLS-1$
@@ -849,7 +831,7 @@ public class XmlManagerViewer {
                         if (headChilds.item(j).getNodeName().equals(TmfXmlStrings.LABEL))
                         {
                             Composite label = new Composite(group, SWT.NONE);
-                            label.setLayout(grid4);
+                            label.setLayout(createGridLayout(4, 5, 5));
 
                             Label graphTitle = new Label(label, SWT.NONE);
                             graphTitle.setText("Graph title: "); //$NON-NLS-1$
@@ -956,7 +938,7 @@ public class XmlManagerViewer {
                     if (definedValue == null)
                     {
                         definedValue = new Composite(group, SWT.NONE);
-                        definedValue.setLayout(grid2);
+                        definedValue.setLayout(createGridLayout(2, 5, 5));
                     }
 
                     Composite definedValueLabel = new Composite(definedValue, SWT.NONE);
@@ -1073,7 +1055,7 @@ public class XmlManagerViewer {
                     entryTitle.setFont(font3);
 
                     Composite currentPathComposite = new Composite(group, SWT.NONE);
-                    currentPathComposite.setLayout(grid3);
+                    currentPathComposite.setLayout(createGridLayout(3, 5, 5));
 
                     Label currentPath = new Label(currentPathComposite, SWT.NONE);
                     currentPath.setText("Current entry path: "); //$NON-NLS-1$
@@ -1137,20 +1119,20 @@ public class XmlManagerViewer {
         if (root.getNodeName() == TmfXmlUiStrings.XY_VIEW)
         {
             Composite titleComposite = new Composite(group, SWT.NONE);
-            titleComposite.setLayout(grid1);
+            titleComposite.setLayout(createGridLayout(1, 5, 5));
             titleComposite.setLayoutData(new GridData(SWT.CENTER, SWT.BEGINNING, false, false));
 
             Label title = new Label(titleComposite, SWT.NONE);
             title.setText("-- XY VIEW SECTION --"); //$NON-NLS-1$
 
             Composite associateFileComp = new Composite(group, SWT.NONE);
-            associateFileComp.setLayout(grid1);
+            associateFileComp.setLayout(createGridLayout(1, 5, 5));
 
             Label associateFile = new Label(associateFileComp, SWT.NONE);
             associateFile.setText("File: " + ((File) (root.getUserData(userDataFileKey))).getName()); //$NON-NLS-1$
 
             Composite IDAndValue = new Composite(group, SWT.NONE);
-            IDAndValue.setLayout(grid2);
+            IDAndValue.setLayout(createGridLayout(2, 5, 5));
 
             Label ID = new Label(IDAndValue, SWT.NONE);
             ID.setText("ID: "); //$NON-NLS-1$
@@ -1175,7 +1157,7 @@ public class XmlManagerViewer {
                         if (headChilds.item(j).getNodeName().equals(TmfXmlStrings.ANALYSIS))
                         {
                             Composite analysisIDComposite = new Composite(group, SWT.NONE);
-                            analysisIDComposite.setLayout(grid1);
+                            analysisIDComposite.setLayout(createGridLayout(1, 5, 5));
 
                             Label analysisID = new Label(analysisIDComposite, SWT.NONE);
                             analysisID.setText("Analysis ID: " + headChilds.item(j).getAttributes().getNamedItem(TmfXmlStrings.ID).getNodeValue());  //$NON-NLS-1$
@@ -1183,7 +1165,7 @@ public class XmlManagerViewer {
                         if (headChilds.item(j).getNodeName().equals(TmfXmlStrings.LABEL))
                         {
                             Composite label = new Composite(group, SWT.NONE);
-                            label.setLayout(grid4);
+                            label.setLayout(createGridLayout(4, 5, 5));
 
                             Label graphTitle = new Label(label, SWT.NONE);
                             graphTitle.setText("Graph title: "); //$NON-NLS-1$
@@ -1277,7 +1259,7 @@ public class XmlManagerViewer {
                     entryTitle.setFont(font3);
 
                     Composite currentPathComposite = new Composite(group, SWT.NONE);
-                    currentPathComposite.setLayout(grid2);
+                    currentPathComposite.setLayout(createGridLayout(2, 5, 5));
 
                     Label currentPath = new Label(currentPathComposite, SWT.NONE);
                     currentPath.setText("Current entry path: "); //$NON-NLS-1$
@@ -1287,7 +1269,7 @@ public class XmlManagerViewer {
                     currentPathValue.setLayoutData(new GridData(200, 20));
 
                     Composite buildPathComposite = new Composite(group, SWT.NONE);
-                    buildPathComposite.setLayout(grid1);
+                    buildPathComposite.setLayout(createGridLayout(1, 5, 5));
 
                     Button buildPath = new Button(buildPathComposite, SWT.PUSH);
                     buildPath.setText("Build path"); //$NON-NLS-1$
@@ -1346,20 +1328,20 @@ public class XmlManagerViewer {
             // TODO Add the new for the state provider modification (Simon
             // Delisle?)
             Composite titleComposite = new Composite(group, SWT.NONE);
-            titleComposite.setLayout(grid1);
+            titleComposite.setLayout(createGridLayout(1, 5, 5));
             titleComposite.setLayoutData(new GridData(SWT.CENTER, SWT.BEGINNING, false, false));
 
             Label title = new Label(titleComposite, SWT.NONE);
             title.setText("-- STATE PROVIDER SECTION --"); //$NON-NLS-1$
 
             Composite associateFileComp = new Composite(group, SWT.NONE);
-            associateFileComp.setLayout(grid1);
+            associateFileComp.setLayout(createGridLayout(1, 5, 5));
 
             Label associateFile = new Label(associateFileComp, SWT.NONE);
             associateFile.setText("File: " + ((File) (root.getUserData(userDataFileKey))).getName()); //$NON-NLS-1$
 
             Composite IDAndVersionAndValues = new Composite(group, SWT.NONE);
-            IDAndVersionAndValues.setLayout(grid4);
+            IDAndVersionAndValues.setLayout(createGridLayout(4, 5, 5));
 
             Label ID = new Label(IDAndVersionAndValues, SWT.NONE);
             ID.setText("ID: "); //$NON-NLS-1$
@@ -1636,15 +1618,14 @@ public class XmlManagerViewer {
         }
 
         Composite entryAttributeComposite = new Composite(group, SWT.NONE);
-        entryAttributeComposite.setLayout(grid1);
+        entryAttributeComposite.setLayout(createGridLayout(1, 5, 5));
         entryAttributeComposite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
         Label entryAttributeTitle = new Label(entryAttributeComposite, SWT.NONE);
         entryAttributeTitle.setText("Entry attributes:"); //$NON-NLS-1$
 
         Composite entryAttributeTableComposite = new Composite(group, SWT.NONE);
-        grid1.marginWidth = 15;
-        entryAttributeTableComposite.setLayout(grid1);
+        entryAttributeTableComposite.setLayout(createGridLayout(1, 15, 5));
         entryAttributeTableComposite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
         final Table entryAttributeTable = new Table(entryAttributeTableComposite, SWT.MULTI | SWT.BORDER);
@@ -1994,6 +1975,9 @@ public class XmlManagerViewer {
                                 Element analysisNode = XmlUtils.getElementInFile(dragFile.getPath(), TmfXmlStrings.ANALYSIS, oldId);
                                 try {
                                     XmlUtils.setNewAttribute(dragFile, XmlUtils.getOriginalXmlFile(dragFile), analysisNode, TmfXmlStrings.ID, newId);
+                                    // Retrieve the parent (dragSourceData) in the modifiated node
+                                    Node parent = findParentNodeRecursive(dragSourceData.getNodeName(), analysisNode);
+
                                 } catch (ParserConfigurationException | SAXException | IOException | TransformerException e) {
                                     e.printStackTrace();
                                     return;
@@ -2038,6 +2022,13 @@ public class XmlManagerViewer {
                     TreeItem dragSource = (TreeItem) currentDragSource[0];
                     dragSource.dispose();
                 }
+            }
+
+            private Node findParentNodeRecursive(String parentNodeName, Node child) {
+                if(child.getParentNode().getNodeName().equals(parentNodeName)) {
+                    return child.getParentNode();
+                }
+                return findParentNodeRecursive(parentNodeName, child.getParentNode());
             }
 
             @Override
@@ -2176,5 +2167,23 @@ public class XmlManagerViewer {
         });
 
         control.setMenu(menu);
+    }
+
+    /**
+     * Create a new GridLayout
+     * @param numColumns
+     *              The number of columns
+     * @param marginWidth
+     *              The number of pixels of horizontal margin that will
+     *              be placed along the left and right edges of the layout.
+     * @param marginHeight
+     *              The number of pixels of vertical margin that will
+     *              be placed along the top and bottom edges of the layout.
+     * */
+    private static GridLayout createGridLayout(int numColumns, int marginWidth, int marginHeight) {
+        GridLayout grid = new GridLayout(numColumns, false);
+        grid.horizontalSpacing = 0; grid.verticalSpacing = 0;
+        grid.marginWidth = marginWidth; grid.marginHeight = marginHeight;
+        return grid;
     }
 }

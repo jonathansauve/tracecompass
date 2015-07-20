@@ -11,7 +11,7 @@ import org.eclipse.tracecompass.tmf.ui.views.TmfView;
 public class XmlManagerView extends TmfView {
 
     private final static String ID = "org.eclipse.tracecompass.tmf.analysis.xml.ui.views.xmlManager"; //$NON-NLS-1$
-    XmlManagerViewer fViewer;
+    XmlManagerViewer2 fViewer;
     /**
      * Constructor
      */
@@ -21,7 +21,7 @@ public class XmlManagerView extends TmfView {
 
     @Override
     public void createPartControl(Composite parent) {
-        fViewer = new XmlManagerViewer(parent);
+        fViewer = new XmlManagerViewer2(parent);
     }
 
     @Override
