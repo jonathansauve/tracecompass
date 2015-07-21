@@ -1,5 +1,7 @@
 package org.eclipse.tracecompass.tmf.analysis.xml.ui.views.xmlManager;
 
+import org.eclipse.swt.layout.GridLayout;
+
 /**
  * This class contains some utilities for the XmlManagerViewer.
  *
@@ -86,5 +88,25 @@ public class XmlManagerUtils {
         String sBlue = new String(cBlue);
 
         return "#" + sRed + sGreen + sBlue; //$NON-NLS-1$
+    }
+
+    /**
+     * Create a new GridLayout
+     * @param numColumns
+     *              The number of columns
+     * @param marginWidth
+     *              The number of pixels of horizontal margin that will
+     *              be placed along the left and right edges of the layout.
+     * @param marginHeight
+     *              The number of pixels of vertical margin that will
+     *              be placed along the top and bottom edges of the layout.
+     * @return
+     *              The new GridLayout
+     * */
+    public static GridLayout createGridLayout(int numColumns, int marginWidth, int marginHeight) {
+        GridLayout grid = new GridLayout(numColumns, false);
+        grid.horizontalSpacing = 0; grid.verticalSpacing = 0;
+        grid.marginWidth = marginWidth; grid.marginHeight = marginHeight;
+        return grid;
     }
 }

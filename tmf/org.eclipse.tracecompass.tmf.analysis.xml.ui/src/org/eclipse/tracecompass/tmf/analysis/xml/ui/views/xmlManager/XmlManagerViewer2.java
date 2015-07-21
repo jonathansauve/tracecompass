@@ -5,7 +5,6 @@ import java.io.File;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Tree;
@@ -29,14 +28,12 @@ public class XmlManagerViewer2 {
 
     private Composite actionsComposite;
         private Button importXmlFile;
+        private Button removeXmlFile;
+        private Button editFile;
 
     /** Xml file folder and files */
     private File activeXMLFolder = new File(XmlUtils.getXmlFilesPath().toString());
     private File[] activeXMLs = activeXMLFolder.listFiles();
-
-    /** Keys to retrieve saved objects */
-    private static final String nodeKey = "node"; //$NON-NLS-1$
-    private static final String fileKey = "file"; //$NON-NLS-1$
 
     /**
      *
@@ -53,44 +50,36 @@ public class XmlManagerViewer2 {
      *
      * */
     private void createContents() {
-        fparent.setLayout(createGridLayout(1, 0, 0));
+        fparent.setLayout(XmlManagerUtils.createGridLayout(1, 0, 0));
         fparent.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
         xmlFilesAndActions = new SashForm(fparent, SWT.HORIZONTAL);
         xmlFilesAndActions.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
-        xmlFilesTree = new Tree(xmlFilesAndActions, SWT.CHECK);
+        xmlFilesTree = new Tree(xmlFilesAndActions, SWT.CHECK | SWT.V_SCROLL | SWT.H_SCROLL);
         for(int i = 0; i < activeXMLs.length; i++) {
             TreeItem xmlFileItem = new TreeItem(xmlFilesTree, SWT.NONE);
             xmlFileItem.setText(activeXMLs[i].getName());
-            xmlFileItem.setData(fileKey, activeXMLs[i]);
+            xmlFileItem.setData(XmlManagerStrings.fileKey, activeXMLs[i]);
         }
+        xmlFilesTree.addListener(SWT.Modify, XmlManagerListeners.xmlFilesTreeListener(xmlFilesTree));
 
         actionsComposite = new Composite(xmlFilesAndActions, SWT.NONE);
-        actionsComposite.setLayout(createGridLayout(1, 0, 0));
+        actionsComposite.setLayout(XmlManagerUtils.createGridLayout(1, 0, 0));
         actionsComposite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
         xmlFilesAndActions.setWeights(new int[] {3, 1});
 
         importXmlFile = new Button(actionsComposite, SWT.PUSH);
         importXmlFile.setText("Import");
-    }
+        importXmlFile.addSelectionListener(XmlManagerListeners.importXmlFileSL(fparent, xmlFilesTree));
 
-    /**
-     * Create a new GridLayout
-     * @param numColumns
-     *              The number of columns
-     * @param marginWidth
-     *              The number of pixels of horizontal margin that will
-     *              be placed along the left and right edges of the layout.
-     * @param marginHeight
-     *              The number of pixels of vertical margin that will
-     *              be placed along the top and bottom edges of the layout.
-     * */
-    private static GridLayout createGridLayout(int numColumns, int marginWidth, int marginHeight) {
-        GridLayout grid = new GridLayout(numColumns, false);
-        grid.horizontalSpacing = 0; grid.verticalSpacing = 0;
-        grid.marginWidth = marginWidth; grid.marginHeight = marginHeight;
-        return grid;
+        removeXmlFile = new Button(actionsComposite, SWT.PUSH);
+        removeXmlFile.setText("Remove");
+        removeXmlFile.addSelectionListener(XmlManagerListeners.removeXmlFileSL(xmlFilesTree));
+
+        editFile = new Button(actionsComposite, SWT.PUSH);
+        editFile.setText("Edit");
+        editFile.addSelectionListener(XmlManagerListeners.editXmlFileSL(xmlFilesTree));
     }
 }
