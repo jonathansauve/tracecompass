@@ -31,6 +31,8 @@ public class XmlManagerViewer2 {
         private Button removeXmlFile;
         private Button editFile;
 
+    /** Variables for the XmlFile*/
+
     /** Xml file folder and files */
     private File activeXMLFolder = new File(XmlUtils.getXmlFilesPath().toString());
     private File[] activeXMLs = activeXMLFolder.listFiles();
@@ -44,6 +46,7 @@ public class XmlManagerViewer2 {
         fparent = parent;
 
         createContents();
+        addListeners();
     }
 
     /**
@@ -56,30 +59,41 @@ public class XmlManagerViewer2 {
         xmlFilesAndActions = new SashForm(fparent, SWT.HORIZONTAL);
         xmlFilesAndActions.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
-        xmlFilesTree = new Tree(xmlFilesAndActions, SWT.CHECK | SWT.V_SCROLL | SWT.H_SCROLL);
+        xmlFilesTree = new Tree(xmlFilesAndActions, SWT.V_SCROLL | SWT.H_SCROLL);
         for(int i = 0; i < activeXMLs.length; i++) {
             TreeItem xmlFileItem = new TreeItem(xmlFilesTree, SWT.NONE);
             xmlFileItem.setText(activeXMLs[i].getName());
             xmlFileItem.setData(XmlManagerStrings.fileKey, activeXMLs[i]);
         }
-        xmlFilesTree.addListener(SWT.Modify, XmlManagerListeners.xmlFilesTreeListener(xmlFilesTree));
+
 
         actionsComposite = new Composite(xmlFilesAndActions, SWT.NONE);
-        actionsComposite.setLayout(XmlManagerUtils.createGridLayout(1, 0, 0));
+        actionsComposite.setLayout(XmlManagerUtils.createGridLayout(1, 0, 5));
         actionsComposite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
-        xmlFilesAndActions.setWeights(new int[] {3, 1});
+        xmlFilesAndActions.setWeights(new int[] {2, 1});
 
         importXmlFile = new Button(actionsComposite, SWT.PUSH);
+        importXmlFile.setLayoutData(new GridData(70, 30));
         importXmlFile.setText("Import");
-        importXmlFile.addSelectionListener(XmlManagerListeners.importXmlFileSL(fparent, xmlFilesTree));
 
         removeXmlFile = new Button(actionsComposite, SWT.PUSH);
         removeXmlFile.setText("Remove");
-        removeXmlFile.addSelectionListener(XmlManagerListeners.removeXmlFileSL(xmlFilesTree));
+        removeXmlFile.setLayoutData(new GridData(70, 30));
 
         editFile = new Button(actionsComposite, SWT.PUSH);
         editFile.setText("Edit");
+        editFile.setLayoutData(new GridData(70, 30));
+    }
+
+    private void addListeners() {
+        xmlFilesTree.addListener(SWT.Modify, XmlManagerListeners.xmlFilesTreeListener(xmlFilesTree, removeXmlFile, editFile));
+        xmlFilesTree.addListener(SWT.Selection, XmlManagerListeners.xmlFilesTreeListener(xmlFilesTree, removeXmlFile, editFile));
+
+        importXmlFile.addSelectionListener(XmlManagerListeners.importXmlFileSL(fparent, xmlFilesTree));
+
+        removeXmlFile.addSelectionListener(XmlManagerListeners.removeXmlFileSL(xmlFilesTree));
+
         editFile.addSelectionListener(XmlManagerListeners.editXmlFileSL(xmlFilesTree));
     }
 }
