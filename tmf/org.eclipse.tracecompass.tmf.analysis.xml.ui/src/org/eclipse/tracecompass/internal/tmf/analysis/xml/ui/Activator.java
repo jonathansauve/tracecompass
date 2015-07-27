@@ -42,6 +42,12 @@ public class Activator extends AbstractUIPlugin {
     public void start(BundleContext context) throws Exception {
         super.start(context);
         setDefault(this);
+        try {
+            XmlUtils.clearXmlDirectory();
+        } catch (Throwable e) {
+            //TODO Catch nullPointerException : when the xml_files folder
+            // have never been initialized
+        }
     }
 
     @Override

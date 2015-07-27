@@ -376,8 +376,10 @@ public class XmlUtils {
         NodeList nodes = doc.getElementsByTagName(node.getNodeName());
         for(int i = 0; i < nodes.getLength(); i++) {
             if(nodes.item(i).isEqualNode(node)) {
-                nodes.item(i).getAttributes().getNamedItem(attribute).setNodeValue(value);
-                docChanged = true;
+                if(nodes.item(i).getAttributes().getNamedItem(attribute) != null) {
+                    nodes.item(i).getAttributes().getNamedItem(attribute).setNodeValue(value);
+                    docChanged = true;
+                }
                 break;
             }
         }
@@ -386,8 +388,10 @@ public class XmlUtils {
         NodeList originalNodes = originalDoc.getElementsByTagName(node.getNodeName());
         for(int i = 0; i < originalNodes.getLength(); i++) {
             if(originalNodes.item(i).isEqualNode(node)) {
-                originalNodes.item(i).getAttributes().getNamedItem(attribute).setNodeValue(value);
-                originalDocChanged = true;
+                if(originalNodes.item(i).getAttributes().getNamedItem(attribute) != null) {
+                    originalNodes.item(i).getAttributes().getNamedItem(attribute).setNodeValue(value);
+                    originalDocChanged = true;
+                }
                 break;
             }
         }

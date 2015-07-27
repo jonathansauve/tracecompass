@@ -1,6 +1,12 @@
 package org.eclipse.tracecompass.tmf.analysis.xml.ui.views.xmlManager;
 
+import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.Menu;
+import org.eclipse.swt.widgets.MenuItem;
+import org.eclipse.swt.widgets.Text;
 
 /**
  * This class contains some utilities for the XmlManagerViewer.
@@ -108,5 +114,58 @@ public class XmlManagerUtils {
         grid.horizontalSpacing = 0; grid.verticalSpacing = 0;
         grid.marginWidth = marginWidth; grid.marginHeight = marginHeight;
         return grid;
+    }
+
+    /**
+     * Add a menu to a <code>Text</code> control. Menu elements : Cut, Copy,
+     * Paste & SelectAll
+     *
+     * @param control
+     *            The Text
+     * */
+    public static void addBasicMenuToText(final Text control) {
+        Menu menu = new Menu(control);
+        MenuItem item = new MenuItem(menu, SWT.PUSH);
+        item.setText("Cut"); //$NON-NLS-1$
+        item.addListener(SWT.Selection, new Listener()
+        {
+            @Override
+            public void handleEvent(Event event)
+            {
+                control.cut();
+            }
+        });
+        item = new MenuItem(menu, SWT.PUSH);
+        item.setText("Copy"); //$NON-NLS-1$
+        item.addListener(SWT.Selection, new Listener()
+        {
+            @Override
+            public void handleEvent(Event event)
+            {
+                control.copy();
+            }
+        });
+        item = new MenuItem(menu, SWT.PUSH);
+        item.setText("Paste"); //$NON-NLS-1$
+        item.addListener(SWT.Selection, new Listener()
+        {
+            @Override
+            public void handleEvent(Event event)
+            {
+                control.paste();
+            }
+        });
+        item = new MenuItem(menu, SWT.PUSH);
+        item.setText("Select All"); //$NON-NLS-1$
+        item.addListener(SWT.Selection, new Listener()
+        {
+            @Override
+            public void handleEvent(Event event)
+            {
+                control.selectAll();
+            }
+        });
+
+        control.setMenu(menu);
     }
 }

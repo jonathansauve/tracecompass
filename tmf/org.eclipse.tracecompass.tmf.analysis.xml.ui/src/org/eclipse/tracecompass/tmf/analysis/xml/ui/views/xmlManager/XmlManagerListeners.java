@@ -14,18 +14,28 @@ import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.jface.window.Window;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.TableEditor;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
+import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.RGB;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.ColorDialog;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.MessageBox;
+import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.TableColumn;
+import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
@@ -436,6 +446,104 @@ public class XmlManagerListeners {
                     } catch (TransformerException e1) {
                         e1.printStackTrace();
                     }
+                }
+            }
+        };
+    }
+
+    /**
+     * @param definedValueTable
+     *              The table for the definedValues
+     * @param editor
+     *              The table editor for this table
+     * @param root
+     *              The root node associate with this table
+     * @return
+     *              The new listener
+     */
+    public static Listener definedValueTableListener(final Table definedValueTable, final TableEditor editor, final Node root) {
+        return new Listener() {
+
+            @Override
+            public void handleEvent(Event event) {
+                Rectangle clientArea = definedValueTable.getClientArea();
+                Point pt = new Point(event.x, event.y);
+                int index = definedValueTable.getTopIndex();
+                while (index < definedValueTable.getItemCount()) {
+                    boolean visible = false;
+                    final TableItem item = definedValueTable.getItem(index);
+                    Node child = (Node) item.getData(XmlManagerStrings.nodeKey);
+                    for (int j = 0; j < definedValueTable.getColumnCount(); j++) {
+                        Rectangle rect = item.getBounds(j);
+                        if (rect.contains(pt)) {
+                            final int column = j;
+                            final TableColumn tableColumn = definedValueTable.getColumn(j);
+                            if(tableColumn.getText().equals(TmfXmlStrings.NAME)) {
+                                final Text text = new Text(definedValueTable, SWT.NONE);
+                                Listener textListener = new Listener() {
+
+                                    @Override
+                                    public void handleEvent(Event e) {
+                                        switch(e.type) {
+                                        case SWT.FocusOut:
+                                            item.setText(column, text.getText());
+                                            text.dispose();
+                                            break;
+                                        case SWT.Traverse:
+                                            switch (e.detail) {
+                                            case SWT.TRAVERSE_RETURN:
+                                                item.setText(column, text.getText());
+                                                //$FALL-THROUGH$
+                                            case SWT.TRAVERSE_ESCAPE:
+                                                text.dispose();
+                                                e.doit = false;
+                                                //$FALL-THROUGH$
+                                            default:
+                                                break;
+                                            }
+                                            break;
+                                        default:
+                                            break;
+                                        }
+                                    }
+
+                                };
+
+                                XmlManagerUtils.addBasicMenuToText(text);
+
+                                text.addListener(SWT.FocusOut, textListener);
+                                text.addListener(SWT.Traverse, textListener);
+                                editor.setEditor(text, item, j);
+                                text.setText(item.getText(j));
+                                text.selectAll();
+                                text.setFocus();
+                                return;
+                            } else if(tableColumn.getText().equals(TmfXmlStrings.COLOR)) {
+                                Color oldColor = item.getBackground(column);
+
+                                ColorDialog dialog = new ColorDialog(Display.getDefault().getActiveShell());
+                                dialog.setRGB(oldColor.getRGB());
+                                dialog.setText("Choose A New Color");
+
+                                RGB newRgb = dialog.open();
+                                if(newRgb != null) {
+                                    try {
+                                        File copyFile = (File) root.getUserData(XmlManagerStrings.fileKey);
+                                        XmlUtils.setNewAttribute(copyFile, XmlUtils.getOriginalXmlFile(copyFile), child, TmfXmlStrings.COLOR,
+                                                XmlManagerUtils.rgbToHexa(newRgb.red, newRgb.green, newRgb.blue));
+                                    } catch (ParserConfigurationException | SAXException | IOException | TransformerException e1) {
+                                        e1.printStackTrace();
+                                        return;
+                                    }
+                                    item.setBackground(column, new Color(Display.getDefault(), newRgb));
+                                }
+                            }
+                        }
+                    }
+                    if (!visible) {
+                        return;
+                    }
+                    index++;
                 }
             }
         };

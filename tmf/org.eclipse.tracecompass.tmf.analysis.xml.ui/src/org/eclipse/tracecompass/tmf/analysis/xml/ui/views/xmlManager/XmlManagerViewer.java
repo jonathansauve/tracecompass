@@ -149,22 +149,20 @@ public class XmlManagerViewer {
         Composite fComposite = new Composite(parent, SWT.NONE);
         fComposite.setLayout(createGridLayout(1, 0, 0));
 
-        final GridData gd = new GridData(SWT.FILL, SWT.FILL, true, true);
-
         sash = new SashForm(fComposite, SWT.HORIZONTAL);
         sash.setLayout(createGridLayout(1, 0, 0));
-        sash.setLayoutData(gd);
+        sash.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
         /** Initialization of group 1 - Active XMLs Analysis */
 
         group1 = new Group(sash, SWT.SHADOW_ETCHED_IN);
         group1.setText("Active XMLs Analysis"); //$NON-NLS-1$
         group1.setLayout(createGridLayout(1, 0, 0));
-        group1.setLayoutData(gd);
+        group1.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
         ftree = new Tree(group1, SWT.CHECK);
         ftree.setLayout(createGridLayout(1, 0, 0));
-        ftree.setLayoutData(gd);
+        ftree.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
         /* Initialize the tree */
         if (activeXMLs != null)
@@ -476,7 +474,7 @@ public class XmlManagerViewer {
         group3 = new Group(sash, SWT.SHADOW_ETCHED_IN);
         group3.setText("Actions"); //$NON-NLS-1$
         group3.setLayout(createGridLayout(1, 0, 0));
-        group3.setLayoutData(gd);
+        group3.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
         Composite importCreate = new Composite(group3, SWT.NONE);
         importCreate.setLayout(createGridLayout(2, 0, 0));
