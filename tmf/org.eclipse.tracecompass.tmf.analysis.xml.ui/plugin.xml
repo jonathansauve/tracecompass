@@ -104,6 +104,7 @@
             allowMultiple="false"
             category="org.eclipse.linuxtools.tmf.ui.views.category"
             class="org.eclipse.tracecompass.tmf.analysis.xml.ui.views.xmlManager.XmlManagerView"
+            icon="icons/eview16/xmlManager_view.gif"
             id="org.eclipse.tracecompass.tmf.analysis.xml.ui.views.xmlManager"
             name="XML Manager"
             restorable="true">

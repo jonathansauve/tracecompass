@@ -23,6 +23,7 @@ Import-Package: com.google.common.collect;version="15.0.0",
  org.eclipse.swtbot.eclipse.finder,
  org.eclipse.swtbot.swt.finder.junit,
  org.eclipse.swtbot.swt.finder.utils,
+ org.eclipse.swtbot.swt.finder.widgets,
  org.eclipse.tracecompass.tmf.ui.swtbot.tests.shared,
  org.junit.runners
 Export-Package: org.eclipse.tracecompass.tmf.analysis.xml.ui.tests

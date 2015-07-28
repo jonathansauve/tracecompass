@@ -10,19 +10,18 @@
  *   Jonathan Sauvé - Initial API and implementation
  *******************************************************************************/
 
-package org.eclipse.tracecompass.tmf.analysis.xml.ui.views.xmlManager;
+package org.eclipse.tracecompass.tmf.analysis.xml.ui.tests.xmlManager;
 
-import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
- * @author Jonathan Sauvé
- *
+ * Test suite for org.eclipse.tracecompass.tmf.analysis.xml.ui.module package
  */
-@SuppressWarnings({ "javadoc", "nls" })
-@NonNullByDefault
-public interface XmlManagerStrings {
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+        XmlManagerViewerButtonsTest.class
+})
+public class AllTests {
 
-    /* Keys to get the data associate with objects */
-    String nodeKey = "nodeKey";
-    String fileKey = "fileKey";
 }
