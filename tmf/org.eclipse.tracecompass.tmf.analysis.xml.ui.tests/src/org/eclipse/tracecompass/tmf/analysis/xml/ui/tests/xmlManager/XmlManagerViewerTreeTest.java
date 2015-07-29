@@ -20,6 +20,7 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.SimpleLayout;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
+import org.eclipse.swtbot.swt.finder.junit.SWTBotJunit4ClassRunner;
 import org.eclipse.swtbot.swt.finder.utils.SWTBotPreferences;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
@@ -27,6 +28,7 @@ import org.eclipse.tracecompass.tmf.ui.swtbot.tests.shared.SWTBotUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 @SuppressWarnings("javadoc")
 /**
@@ -35,6 +37,7 @@ import org.junit.Test;
  * @author Jonathan Sauvé
  *
  */
+@RunWith(SWTBotJunit4ClassRunner.class)
 public class XmlManagerViewerTreeTest {
     private static final String PROJECT_NAME = "XmlManagerViewerTest";
     private static final String RESOURCE_PERSPECTIVE_ID = "org.eclipse.ui.resourcePerspective";
@@ -45,9 +48,11 @@ public class XmlManagerViewerTreeTest {
     private static final String XML_MANAGER_TREE_ITEM_AND_SHELL_TITLE = "XML Manager";
     private static final String OK_BUTTON_TEXT = "OK";
 
-    private static SWTWorkbenchBot fBot;
-
     private static final Logger fLogger = Logger.getRootLogger();
+
+    protected static SWTWorkbenchBot fBot;
+
+
 
     @BeforeClass
     public static void setUp() {

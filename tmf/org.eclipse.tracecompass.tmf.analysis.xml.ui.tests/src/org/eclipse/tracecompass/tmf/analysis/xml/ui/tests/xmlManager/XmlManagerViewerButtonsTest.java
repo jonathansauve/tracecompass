@@ -47,10 +47,11 @@ public class XmlManagerViewerButtonsTest {
     private static final String REMOVE_BUTTON_TEXT = "Remove";
     private static final String EDIT_BUTTON_TEXT = "Edit";
 
+    private static final Logger fLogger = Logger.getRootLogger();
 
     private static SWTWorkbenchBot fBot;
 
-    private static final Logger fLogger = Logger.getRootLogger();
+
 
     @BeforeClass
     public static void setUp() {
@@ -64,7 +65,8 @@ public class XmlManagerViewerButtonsTest {
 
         SWTBotUtils.closeView("welcome", fBot);
 
-        SWTBotUtils.switchToPerspective(RESOURCE_PERSPECTIVE_ID);
+        //SWTBotUtils.switchToPerspective(RESOURCE_PERSPECTIVE_ID);
+        SWTBotUtils.switchToTracingPerspective();
         /* finish waiting for eclipse to load */
         SWTBotUtils.waitForJobs();
     }
