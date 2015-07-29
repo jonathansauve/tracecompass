@@ -551,6 +551,9 @@ public class XmlManagerListeners {
                                 }
                             }
                         }
+                        if (!visible && rect.intersects(clientArea)) {
+                            visible = true;
+                        }
                     }
                     if (!visible) {
                         return;

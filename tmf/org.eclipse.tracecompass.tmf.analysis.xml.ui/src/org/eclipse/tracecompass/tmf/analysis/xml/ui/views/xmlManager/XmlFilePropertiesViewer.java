@@ -32,6 +32,7 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
@@ -77,6 +78,8 @@ public class XmlFilePropertiesViewer {
                      */
                     public static boolean createAnotherTable = false;
                     private static final Table[] currentTable = new Table[1];
+                    private static Composite fchanges;
+    private Composite factionsComposite;
 
     /**
      * Public constructor
@@ -101,11 +104,11 @@ public class XmlFilePropertiesViewer {
     }
 
     private void createContents() {
-        fsash = new SashForm(fparent, SWT.HORIZONTAL);
+        fsash = new SashForm(fparent, SWT.HORIZONTAL | SWT.BORDER);
         fsash.setLayout(XmlManagerUtils.createGridLayout(1, 0, 0));
         fsash.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
-        ftree = new Tree(fsash, SWT.V_SCROLL | SWT.H_SCROLL | SWT.BORDER);
+        ftree = new Tree(fsash, SWT.V_SCROLL | SWT.H_SCROLL);
         ftree.setLayout(XmlManagerUtils.createGridLayout(1, 0, 0));
         ftree.setLayoutData(new GridData(SWT.BEGINNING, SWT.FILL, true, true));
 
@@ -127,14 +130,30 @@ public class XmlFilePropertiesViewer {
 
         fcomposite = new Composite(fsash, SWT.NONE);
         fcomposite.setLayout(XmlManagerUtils.createGridLayout(1, 0, 0));
-        fcomposite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, false));
+        fcomposite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
         sc = new ScrolledComposite(fcomposite, SWT.V_SCROLL | SWT.H_SCROLL);
         sc.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
         fproperties = new Composite(sc, SWT.NONE);
         fproperties.setLayout(XmlManagerUtils.createGridLayout(1, 0, 0));
-        fproperties.setLayoutData(new GridData(SWT.BEGINNING, SWT.BEGINNING, false, false));
+        fproperties.setLayoutData(new GridData(SWT.BEGINNING, SWT.BEGINNING, true, true));
+
+        fchanges = new Composite(fcomposite, SWT.NONE);
+        GridLayout changesCompositeLayout = new GridLayout(2, false);
+        changesCompositeLayout.marginHeight = 20; changesCompositeLayout.marginWidth = 20;
+        fchanges.setLayout(changesCompositeLayout);
+        fchanges.setLayoutData(new GridData(SWT.END, SWT.END, true, false));
+
+        Button restoreDefaults = new Button(fchanges, SWT.PUSH);
+        restoreDefaults.setText("Restore Defaults");
+        restoreDefaults.setLayoutData(new GridData(140, 30));
+        /* add listener here */
+
+        Button saveChanges = new Button(fchanges, SWT.PUSH);
+        saveChanges.setText("Save Changes");
+        saveChanges.setLayoutData(new GridData(120, 30));
+        /* add listener here */
 
         fsash.setWeights(new int[] {1, 3});
 
@@ -142,6 +161,25 @@ public class XmlFilePropertiesViewer {
         sc.setExpandHorizontal(true);
         sc.setExpandVertical(true);
         sc.setMinSize(fproperties.computeSize(SWT.DEFAULT, SWT.DEFAULT));
+
+        factionsComposite = new Composite(fparent, SWT.BORDER);
+        GridLayout actionsCompositeLayout = new GridLayout(2, false);
+        actionsCompositeLayout.marginHeight = 25; actionsCompositeLayout.marginWidth = 25;
+        factionsComposite.setLayout(actionsCompositeLayout);
+        factionsComposite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, false));
+
+        Button cancelButton = new Button(factionsComposite, SWT.PUSH);
+        cancelButton.setText("Cancel");
+        GridData cancelData = new GridData(SWT.END, SWT.CENTER, false, false);
+        cancelData.widthHint = 70; cancelData.heightHint = 30;
+        cancelButton.setLayoutData(cancelData);
+        /* add listener here */
+
+        /*Button finishButton = new Button(factionsComposite, SWT.PUSH);
+        finishButton.setText("Finish");
+        GridData finishData = new GridData(SWT.END, SWT.CENTER, false, false);
+        finishData.widthHint = 70; finishData.heightHint = 30;
+        cancelButton.setLayoutData(finishData);*/
     }
 
     /**
@@ -310,7 +348,7 @@ public class XmlFilePropertiesViewer {
            Label currentPath = new Label(currentPathComposite, SWT.NONE);
            currentPath.setText("Current entry path: "); //$NON-NLS-1$
 
-           Label currentPathValue = new Label(currentPathComposite, SWT.BORDER);
+           Label currentPathValue = new Label(currentPathComposite, SWT.BORDER | SWT.WRAP);
            currentPathValue.setText(child.getAttributes().getNamedItem(TmfXmlUiStrings.PATH).getNodeValue());
            currentPathValue.setLayoutData(new GridData(200, 20));
 
@@ -393,7 +431,7 @@ public class XmlFilePropertiesViewer {
                        .getHeight(), SWT.BOLD));
                processStatusTitle.setFont(font2);
 
-               Composite definedValueTableComposite = new Composite(fproperties, SWT.BORDER);
+               Composite definedValueTableComposite = new Composite(fproperties, SWT.NONE);
                definedValueTableComposite.setLayout(XmlManagerUtils.createGridLayout(1, 15, 5));
                definedValueTableComposite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
