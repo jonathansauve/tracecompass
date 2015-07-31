@@ -21,6 +21,7 @@ import javax.xml.transform.TransformerException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.dialogs.ErrorDialog;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.TreeSelection;
@@ -318,18 +319,50 @@ public class XmlManagerListeners {
     }
 
     /**
+     * @param tree
+     *              The tree that the listener is attach to
      * @return
      *              The selection listener
      */
-    public static SelectionListener propertiesTreeSL() {
+    public static SelectionListener propertiesTreeSL(final Tree tree) {
         return new SelectionListener() {
 
             @Override
             public void widgetSelected(SelectionEvent e) {
                 TreeItem selectedItem = (TreeItem) e.item;
                 Node root = (Node) selectedItem.getData(XmlManagerStrings.nodeKey);
-
-                XmlFilePropertiesViewer.fillComposite(root);
+                if(!selectedItem.equals(XmlFilePropertiesViewer.lastSelectedItem)) {
+                    int returnCode = 0;
+                    if(XmlFilePropertiesViewer.changesInStandby()) {
+                        MessageDialog dialog = new MessageDialog(Display.getDefault().getActiveShell(),
+                                "Unsaved changes", null, "There are unsaved changes for this XML part. What do you want to do?",
+                                MessageDialog.QUESTION, new String[] {"Close without saving", "Cancel", "Save and close"}, 0);
+                                returnCode = dialog.open();
+                                System.out.println(returnCode);
+                    }
+                    switch(returnCode) {
+                    // close without saving
+                    case 0:
+                        XmlFilePropertiesViewer.clearChanges();
+                        XmlFilePropertiesViewer.fillComposite(root);
+                        XmlFilePropertiesViewer.lastSelectedItem = selectedItem;
+                        break;
+                    //cancel
+                    case 1:
+                        tree.setSelection(XmlFilePropertiesViewer.lastSelectedItem);
+                        break;
+                    // save and close
+                    case 2:
+                        XmlFilePropertiesViewer.applyAllChanges();
+                        XmlFilePropertiesViewer.fillComposite(root);
+                        XmlFilePropertiesViewer.lastSelectedItem = selectedItem;
+                        break;
+                    // same as cancel
+                    default:
+                        tree.setSelection(XmlFilePropertiesViewer.lastSelectedItem);
+                        break;
+                    }
+                }
             }
 
             @Override
@@ -598,12 +631,40 @@ public class XmlManagerListeners {
      * @return
      *              The new selection listener
      */
-    public static Listener closeShellSL(final Shell shell, final boolean unsavedChanges) {
+    public static Listener closeShellSL(final Shell shell) {
         return new Listener() {
 
             @Override
             public void handleEvent(Event event) {
-                if(unsavedChanges) {
+                int returnCode = 0;
+                if(XmlFilePropertiesViewer.changesInStandby()) {
+                    MessageDialog dialog = new MessageDialog(Display.getDefault().getActiveShell(),
+                            "Unsaved changes", null, "The changes have not been apply. What do you want to do?",
+                            MessageDialog.QUESTION, new String[] {"Close without saving", "Cancel", "Save and close"}, 0);
+                            returnCode = dialog.open();
+                            System.out.println(returnCode);
+                }
+                switch(returnCode) {
+                // close without saving
+                case 0:
+                    XmlFilePropertiesViewer.clearChanges();
+                    shell.close();
+                    break;
+                //cancel
+                case 1:
+                    // do nothing
+                    break;
+                // save and close
+                case 2:
+                    XmlFilePropertiesViewer.applyAllChanges();
+                    shell.close();
+                    break;
+                // same as cancel
+                default:
+                    // do nothing
+                    break;
+                }
+                /*if(unsavedChanges) {
                     MessageBox messageBox = new MessageBox(shell, SWT.ICON_QUESTION
                             | SWT.YES | SWT.NO);
                     messageBox.setMessage("There's unsaved changed. Do you really want to close?");
@@ -612,7 +673,7 @@ public class XmlManagerListeners {
                 }
                 if(event.doit) {
                     shell.close();
-                }
+                }*/
             }
         };
     }

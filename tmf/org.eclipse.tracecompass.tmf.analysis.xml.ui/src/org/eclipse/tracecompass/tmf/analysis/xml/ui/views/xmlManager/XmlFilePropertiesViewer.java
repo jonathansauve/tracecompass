@@ -74,6 +74,10 @@ public class XmlFilePropertiesViewer extends Dialog {
 
     private static SashForm fsash;
         private static Tree ftree;
+        /**
+         * The last selected item in the tree
+         */
+        public static TreeItem lastSelectedItem;
         private static Composite fcomposite;
             private static ScrolledComposite sc;
                 private static Composite fproperties;
@@ -128,7 +132,7 @@ public class XmlFilePropertiesViewer extends Dialog {
     protected void cancelPressed() {
         Button cancelButton = super.getButton(IDialogConstants.CANCEL_ID);
         if(cancelButton != null) {
-            cancelButton.addListener(SWT.Selection, XmlManagerListeners.closeShellSL(fshell, true));
+            cancelButton.addListener(SWT.Selection, XmlManagerListeners.closeShellSL(fshell));
         }
     }
 
@@ -140,7 +144,7 @@ public class XmlFilePropertiesViewer extends Dialog {
         ftree = new Tree(fsash, SWT.V_SCROLL | SWT.H_SCROLL | SWT.BORDER);
         ftree.setLayout(XmlManagerUtils.createGridLayout(1, 0, 0));
         ftree.setLayoutData(new GridData(SWT.BEGINNING, SWT.FILL, true, true));
-        ftree.addSelectionListener(XmlManagerListeners.propertiesTreeSL());
+        ftree.addSelectionListener(XmlManagerListeners.propertiesTreeSL(ftree));
 
         TmfXmlManagerParser parser = null;
         try {
@@ -158,7 +162,7 @@ public class XmlFilePropertiesViewer extends Dialog {
             }
         }
 
-        fcomposite = new Composite(fsash, SWT.NONE);
+        fcomposite = new Composite(fsash, SWT.BORDER);
         fcomposite.setLayout(XmlManagerUtils.createGridLayout(1, 0, 0));
         fcomposite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
@@ -240,7 +244,7 @@ public class XmlFilePropertiesViewer extends Dialog {
            IDValueComposite.setLayout(XmlManagerUtils.createGridLayout(1, 15, 5));
            IDValueComposite.setLayoutData(new GridData(SWT.BEGINNING, SWT.BEGINNING, true, false));
 
-           Text IDValue = new Text(IDValueComposite, SWT.WRAP | SWT.BORDER);
+           Text IDValue = new Text(IDValueComposite, SWT.BORDER);
            IDValue.setLayoutData(new GridData(300, 40));
            String initialTitle = root.getAttributes().getNamedItem(TmfXmlStrings.ID).getNodeValue();
            IDValue.setText(initialTitle);
@@ -276,7 +280,7 @@ public class XmlFilePropertiesViewer extends Dialog {
            IDValueComposite2.setLayout(XmlManagerUtils.createGridLayout(1, 15, 5));
            IDValueComposite2.setLayoutData(new GridData(SWT.BEGINNING, SWT.BEGINNING, true, false));
 
-           Text IDValue2 = new Text(IDValueComposite2, SWT.WRAP | SWT.BORDER);
+           Text IDValue2 = new Text(IDValueComposite2, SWT.BORDER);
            IDValue2.setLayoutData(new GridData(300, 40));
            String initialTitle2 = root.getAttributes().getNamedItem(TmfXmlStrings.ID).getNodeValue();
            IDValue2.setText(initialTitle2);
@@ -345,7 +349,7 @@ public class XmlFilePropertiesViewer extends Dialog {
            Label currentPath = new Label(currentPathComposite, SWT.NONE);
            currentPath.setText("Current entry path: "); //$NON-NLS-1$
 
-           Label currentPathValue = new Label(currentPathComposite, SWT.BORDER | SWT.WRAP);
+           Label currentPathValue = new Label(currentPathComposite, SWT.BORDER);
            currentPathValue.setText(child.getAttributes().getNamedItem(TmfXmlUiStrings.PATH).getNodeValue());
            currentPathValue.setLayoutData(new GridData(200, 20));
 
@@ -374,7 +378,7 @@ public class XmlFilePropertiesViewer extends Dialog {
            textComposite.setLayout(XmlManagerUtils.createGridLayout(1, 15, 5));
            textComposite.setLayoutData(new GridData(SWT.BEGINNING, SWT.BEGINNING, false, false));
 
-           final Text text = new Text(textComposite, SWT.WRAP | SWT.BORDER);
+           final Text text = new Text(textComposite, SWT.BORDER);
            final String initialTitle = child.getAttributes().getNamedItem(TmfXmlStrings.VALUE).getNodeValue();
            text.setLayoutData(new GridData(300, 40));
            text.setText(initialTitle);
@@ -402,7 +406,7 @@ public class XmlFilePropertiesViewer extends Dialog {
            analysisIDValueComposite.setLayout(XmlManagerUtils.createGridLayout(1, 15, 5));
            analysisIDValueComposite.setLayoutData(new GridData(SWT.BEGINNING, SWT.BEGINNING, false, false));
 
-           Text analysisIDValue = new Text(analysisIDValueComposite, SWT.WRAP | SWT.BORDER);
+           Text analysisIDValue = new Text(analysisIDValueComposite, SWT.BORDER);
            analysisIDValue.setLayoutData(new GridData(300, 40));
            String initialTitle2 = child.getAttributes().getNamedItem(TmfXmlStrings.ID).getNodeValue();
            analysisIDValue.setText(initialTitle2);
@@ -861,4 +865,19 @@ public class XmlFilePropertiesViewer extends Dialog {
        }
        unapplyChanges.clear();
    }
+
+   /**
+     * @return
+     *              True if there are changes in standby, false otherwise
+     */
+    public static boolean changesInStandby() {
+           return !unapplyChanges.isEmpty();
+       }
+
+    /**
+     * Clear all the changes in standby, without applying them
+     */
+    public static void clearChanges() {
+        unapplyChanges.clear();
+    }
 }
