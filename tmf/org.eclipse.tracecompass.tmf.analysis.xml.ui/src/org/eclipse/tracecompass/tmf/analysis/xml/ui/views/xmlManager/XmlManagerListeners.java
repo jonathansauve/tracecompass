@@ -45,6 +45,7 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.MessageBox;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.TableItem;
@@ -291,20 +292,22 @@ public class XmlManagerListeners {
     /**
      * This listener open a new window to allow the modification
      * of the properties of the file
+     * @param parent
+     *              The parent's composite
      * @param xmlFilesTree
      *              The XML file tree
      * @return
      *              The selection listener
      *
      * */
-    public static SelectionListener editXmlFileSL(final Tree xmlFilesTree) {
+    public static SelectionListener editXmlFileSL(final Composite parent, final Tree xmlFilesTree) {
         return new SelectionListener() {
 
             @Override
             public void widgetSelected(SelectionEvent e) {
                 TreeItem[] selection = xmlFilesTree.getSelection();
                 if(selection.length != 0) {
-                    XmlFilePropertiesViewer pv = new XmlFilePropertiesViewer((File)selection[0].getData(XmlManagerStrings.fileKey));
+                    XmlFilePropertiesViewer pv = new XmlFilePropertiesViewer(parent.getShell(), (File)selection[0].getData(XmlManagerStrings.fileKey));
                     pv.open();
                 }
             }
@@ -350,10 +353,10 @@ public class XmlManagerListeners {
             @Override
             public void widgetSelected(SelectionEvent e) {
                 Button button = (Button) e.widget;
-                Node oldNode = (Node) button.getData(XmlManagerStrings.nodeKey);
-                File xmlFile = (File)root.getUserData(XmlManagerStrings.fileKey);
+                final Node oldNode = (Node) button.getData(XmlManagerStrings.nodeKey);
+                final File xmlFile = (File)root.getUserData(XmlManagerStrings.fileKey);
 
-                StateSystemPathBuilderViewer path = new StateSystemPathBuilderViewer(parent.getShell());
+                final StateSystemPathBuilderViewer path = new StateSystemPathBuilderViewer(parent.getShell());
                 // Check if the user have an active trace before
                 // opening
                 ITmfTrace trace = TmfTraceManager.getInstance().getActiveTrace();
@@ -362,17 +365,19 @@ public class XmlManagerListeners {
                     int returnCode = path.open();
                     if (returnCode == Window.OK) {
                         currentPathValue.setText(path.getBuildPath());
-                        try {
-                            XmlUtils.setNewAttribute(xmlFile, XmlUtils.getOriginalXmlFile(xmlFile), oldNode, TmfXmlUiStrings.PATH, path.getBuildPath());
-                        } catch (ParserConfigurationException e1) {
-                            e1.printStackTrace();
-                        } catch (SAXException e1) {
-                            e1.printStackTrace();
-                        } catch (IOException e1) {
-                            e1.printStackTrace();
-                        } catch (TransformerException e1) {
-                            e1.printStackTrace();
-                        }
+                        XmlFilePropertiesViewer.addChange(button.hashCode(), new Runnable() {
+
+                            @Override
+                            public void run() {
+                                try {
+                                    XmlUtils.setNewAttribute(xmlFile, XmlUtils.getOriginalXmlFile(xmlFile), oldNode, TmfXmlUiStrings.PATH, path.getBuildPath());
+                                } catch (ParserConfigurationException | SAXException | IOException | TransformerException error) {
+                                    error.printStackTrace();
+                                    return;
+                                }
+                            }
+                        });
+
                     }
                 }
                 else {
@@ -403,22 +408,28 @@ public class XmlManagerListeners {
             @Override
             public void widgetSelected(SelectionEvent e) {
                 MenuItem menuItem = (MenuItem) e.widget;
-                Node oldNode = (Node) menuItem.getData(XmlManagerStrings.nodeKey);
-                File xmlFile = (File)root.getUserData(XmlManagerStrings.fileKey);
+                final Node oldNode = (Node) menuItem.getData(XmlManagerStrings.nodeKey);
+                final File xmlFile = (File)root.getUserData(XmlManagerStrings.fileKey);
 
                 if (!initialTitle.equals(text.getText())) {
                     text.setText(initialTitle);
-                    try {
-                        XmlUtils.setNewAttribute(xmlFile, XmlUtils.getOriginalXmlFile(xmlFile), oldNode, TmfXmlStrings.VALUE, text.getText());
-                    } catch (ParserConfigurationException e1) {
-                        e1.printStackTrace();
-                    } catch (SAXException e1) {
-                        e1.printStackTrace();
-                    } catch (IOException e1) {
-                        e1.printStackTrace();
-                    } catch (TransformerException e1) {
-                        e1.printStackTrace();
-                    }
+                    XmlFilePropertiesViewer.addChange(text.hashCode(), new Runnable() {
+
+                        @Override
+                        public void run() {
+                            try {
+                                XmlUtils.setNewAttribute(xmlFile, XmlUtils.getOriginalXmlFile(xmlFile), oldNode, TmfXmlStrings.VALUE, text.getText());
+                            } catch (ParserConfigurationException e1) {
+                                e1.printStackTrace();
+                            } catch (SAXException e1) {
+                                e1.printStackTrace();
+                            } catch (IOException e1) {
+                                e1.printStackTrace();
+                            } catch (TransformerException e1) {
+                                e1.printStackTrace();
+                            }
+                        }
+                    });
                 }
             }
 
@@ -434,30 +445,38 @@ public class XmlManagerListeners {
      *              The initial text value of the Text
      * @param root
      *              The root node
+     * @param attributeType
+     *              The attribute type to change the value in the XML file
      * @return
      *              The modify listener
      */
-    public static ModifyListener textML(final Text text, final String initialTitle, final Node root) {
+    public static ModifyListener textML(final Text text, final String initialTitle, final Node root, final String attributeType) {
         return new ModifyListener() {
 
             @Override
             public void modifyText(ModifyEvent e) {
-                Node oldNode = (Node) text.getData(XmlManagerStrings.nodeKey);
-                File xmlFile = (File)root.getUserData(XmlManagerStrings.fileKey);
+                final Node oldNode = (Node) text.getData(XmlManagerStrings.nodeKey);
+                final File xmlFile = (File)root.getUserData(XmlManagerStrings.fileKey);
 
                 if (!initialTitle.equals(text.getText()))
                 {
-                    try {
-                        XmlUtils.setNewAttribute(xmlFile, XmlUtils.getOriginalXmlFile(xmlFile), oldNode, TmfXmlStrings.VALUE, text.getText());
-                    } catch (ParserConfigurationException e1) {
-                        e1.printStackTrace();
-                    } catch (SAXException e1) {
-                        e1.printStackTrace();
-                    } catch (IOException e1) {
-                        e1.printStackTrace();
-                    } catch (TransformerException e1) {
-                        e1.printStackTrace();
-                    }
+                    XmlFilePropertiesViewer.addChange(text.hashCode(), new Runnable() {
+
+                        @Override
+                        public void run() {
+                            try {
+                                XmlUtils.setNewAttribute(xmlFile, XmlUtils.getOriginalXmlFile(xmlFile), oldNode, attributeType, text.getText());
+                            } catch (ParserConfigurationException e1) {
+                                e1.printStackTrace();
+                            } catch (SAXException e1) {
+                                e1.printStackTrace();
+                            } catch (IOException e1) {
+                                e1.printStackTrace();
+                            } catch (TransformerException e1) {
+                                e1.printStackTrace();
+                            }
+                        }
+                    });
                 }
             }
         };
@@ -484,7 +503,7 @@ public class XmlManagerListeners {
                 while (index < definedValueTable.getItemCount()) {
                     boolean visible = false;
                     final TableItem item = definedValueTable.getItem(index);
-                    Node child = (Node) item.getData(XmlManagerStrings.nodeKey);
+                    final Node child = (Node) item.getData(XmlManagerStrings.nodeKey);
                     for (int j = 0; j < definedValueTable.getColumnCount(); j++) {
                         Rectangle rect = item.getBounds(j);
                         if (rect.contains(pt)) {
@@ -537,16 +556,23 @@ public class XmlManagerListeners {
                                 dialog.setRGB(oldColor.getRGB());
                                 dialog.setText("Choose A New Color");
 
-                                RGB newRgb = dialog.open();
+                                final RGB newRgb = dialog.open();
                                 if(newRgb != null) {
-                                    try {
-                                        File copyFile = (File) root.getUserData(XmlManagerStrings.fileKey);
-                                        XmlUtils.setNewAttribute(copyFile, XmlUtils.getOriginalXmlFile(copyFile), child, TmfXmlStrings.COLOR,
-                                                XmlManagerUtils.rgbToHexa(newRgb.red, newRgb.green, newRgb.blue));
-                                    } catch (ParserConfigurationException | SAXException | IOException | TransformerException e1) {
-                                        e1.printStackTrace();
-                                        return;
-                                    }
+                                    XmlFilePropertiesViewer.addChange(item.hashCode(), new Runnable() {
+
+                                        @Override
+                                        public void run() {
+                                            try {
+                                                File copyFile = (File) root.getUserData(XmlManagerStrings.fileKey);
+                                                XmlUtils.setNewAttribute(copyFile, XmlUtils.getOriginalXmlFile(copyFile), child, TmfXmlStrings.COLOR,
+                                                        XmlManagerUtils.rgbToHexa(newRgb.red, newRgb.green, newRgb.blue));
+                                            } catch (ParserConfigurationException | SAXException | IOException | TransformerException e1) {
+                                                e1.printStackTrace();
+                                                return;
+                                            }
+
+                                        }
+                                    });
                                     item.setBackground(column, new Color(Display.getDefault(), newRgb));
                                 }
                             }
@@ -561,6 +587,52 @@ public class XmlManagerListeners {
                     index++;
                 }
             }
+        };
+    }
+
+    /**
+     * @param shell
+     *              The shell that triggers the action
+     * @param unsavedChanges
+     *              Whether there are unsaved changes to the XML files
+     * @return
+     *              The new selection listener
+     */
+    public static Listener closeShellSL(final Shell shell, final boolean unsavedChanges) {
+        return new Listener() {
+
+            @Override
+            public void handleEvent(Event event) {
+                if(unsavedChanges) {
+                    MessageBox messageBox = new MessageBox(shell, SWT.ICON_QUESTION
+                            | SWT.YES | SWT.NO);
+                    messageBox.setMessage("There's unsaved changed. Do you really want to close?");
+                    messageBox.setText("Closing " + shell.getText());
+                    event.doit = messageBox.open() == SWT.YES;
+                }
+                if(event.doit) {
+                    shell.close();
+                }
+            }
+        };
+    }
+
+    /**
+     * This handler only apply all the changes in standby.
+     * @return
+     *              The new selection listener
+     *
+     */
+    public static SelectionListener saveChangesSL() {
+        return new SelectionListener() {
+
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                XmlFilePropertiesViewer.applyAllChanges();
+            }
+
+            @Override
+            public void widgetDefaultSelected(SelectionEvent e) { }
         };
     }
 }

@@ -15,11 +15,15 @@ package org.eclipse.tracecompass.tmf.analysis.xml.ui.views.xmlManager;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 
+import org.eclipse.jface.dialogs.Dialog;
+import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.viewers.TableLayout;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
@@ -61,9 +65,9 @@ import org.xml.sax.SAXException;
  *
  */
 @SuppressWarnings({"nls"})
-public class XmlFilePropertiesViewer {
+public class XmlFilePropertiesViewer extends Dialog {
 
-    private File fxmlFile;
+    private static File fxmlFile;
 
     private static Shell fshell;
     private static Composite fparent;
@@ -79,38 +83,64 @@ public class XmlFilePropertiesViewer {
                     public static boolean createAnotherTable = false;
                     private static final Table[] currentTable = new Table[1];
                     private static Composite fchanges;
-    private Composite factionsComposite;
+                        private static Button restoreDefaults;
+                        private static Button saveChanges;
+
+    private static Map<Integer, Runnable> unapplyChanges = new HashMap<>();
 
     /**
      * Public constructor
+     * @param parentShell
+     *              The parent's shell
      * @param xmlFile
-     *              The xmlFile
-     * */
-    public XmlFilePropertiesViewer(File xmlFile) {
+     *              The xmlFile to show the properties
+     */
+    public XmlFilePropertiesViewer(Shell parentShell, File xmlFile) {
+        super(parentShell);
+        super.setShellStyle(super.getShellStyle() | SWT.SHELL_TRIM);
         fxmlFile = xmlFile;
+    }
 
-        fshell = new Shell(SWT.SHELL_TRIM);
-        fshell.setText("Properties - " + fxmlFile.getName());
-        fshell.setMinimumSize(700, 500);
-        fshell.setSize(700, 500);
-        fshell.setLayout(XmlManagerUtils.createGridLayout(1, 0, 0));
-
-        fparent = new Composite(fshell, SWT.NONE);
+    @Override
+    protected Control createDialogArea(Composite parent) {
+        fparent = (Composite)super.createDialogArea(parent);
         fparent.setLayout(XmlManagerUtils.createGridLayout(1, 0, 0));
         fparent.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
         createContents();
-        addListeners();
+
+        return fparent;
     }
 
-    private void createContents() {
-        fsash = new SashForm(fparent, SWT.HORIZONTAL | SWT.BORDER);
+    @Override
+    protected void configureShell(Shell newShell) {
+        newShell.setText("Properties - " + fxmlFile.getName());
+        newShell.setMinimumSize(700, 700);
+        newShell.setSize(700, 800);
+        newShell.setLayout(XmlManagerUtils.createGridLayout(1, 0, 0));
+
+        super.configureShell(newShell);
+
+        fshell = newShell;
+    }
+
+    @Override
+    protected void cancelPressed() {
+        Button cancelButton = super.getButton(IDialogConstants.CANCEL_ID);
+        if(cancelButton != null) {
+            cancelButton.addListener(SWT.Selection, XmlManagerListeners.closeShellSL(fshell, true));
+        }
+    }
+
+    private static void createContents() {
+        fsash = new SashForm(fparent, SWT.HORIZONTAL | SWT.NONE);
         fsash.setLayout(XmlManagerUtils.createGridLayout(1, 0, 0));
         fsash.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
-        ftree = new Tree(fsash, SWT.V_SCROLL | SWT.H_SCROLL);
+        ftree = new Tree(fsash, SWT.V_SCROLL | SWT.H_SCROLL | SWT.BORDER);
         ftree.setLayout(XmlManagerUtils.createGridLayout(1, 0, 0));
         ftree.setLayoutData(new GridData(SWT.BEGINNING, SWT.FILL, true, true));
+        ftree.addSelectionListener(XmlManagerListeners.propertiesTreeSL());
 
         TmfXmlManagerParser parser = null;
         try {
@@ -137,7 +167,7 @@ public class XmlFilePropertiesViewer {
 
         fproperties = new Composite(sc, SWT.NONE);
         fproperties.setLayout(XmlManagerUtils.createGridLayout(1, 0, 0));
-        fproperties.setLayoutData(new GridData(SWT.BEGINNING, SWT.BEGINNING, true, true));
+        fproperties.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
         fchanges = new Composite(fcomposite, SWT.NONE);
         GridLayout changesCompositeLayout = new GridLayout(2, false);
@@ -145,55 +175,17 @@ public class XmlFilePropertiesViewer {
         fchanges.setLayout(changesCompositeLayout);
         fchanges.setLayoutData(new GridData(SWT.END, SWT.END, true, false));
 
-        Button restoreDefaults = new Button(fchanges, SWT.PUSH);
+        restoreDefaults = new Button(fchanges, SWT.PUSH);
         restoreDefaults.setText("Restore Defaults");
         restoreDefaults.setLayoutData(new GridData(140, 30));
         /* add listener here */
 
-        Button saveChanges = new Button(fchanges, SWT.PUSH);
+        saveChanges = new Button(fchanges, SWT.PUSH);
         saveChanges.setText("Save Changes");
         saveChanges.setLayoutData(new GridData(120, 30));
-        /* add listener here */
+        saveChanges.addSelectionListener(XmlManagerListeners.saveChangesSL());
 
         fsash.setWeights(new int[] {1, 3});
-
-        sc.setContent(fproperties);
-        sc.setExpandHorizontal(true);
-        sc.setExpandVertical(true);
-        sc.setMinSize(fproperties.computeSize(SWT.DEFAULT, SWT.DEFAULT));
-
-        factionsComposite = new Composite(fparent, SWT.BORDER);
-        GridLayout actionsCompositeLayout = new GridLayout(2, false);
-        actionsCompositeLayout.marginHeight = 25; actionsCompositeLayout.marginWidth = 25;
-        factionsComposite.setLayout(actionsCompositeLayout);
-        factionsComposite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, false));
-
-        Button cancelButton = new Button(factionsComposite, SWT.PUSH);
-        cancelButton.setText("Cancel");
-        GridData cancelData = new GridData(SWT.END, SWT.CENTER, false, false);
-        cancelData.widthHint = 70; cancelData.heightHint = 30;
-        cancelButton.setLayoutData(cancelData);
-        /* add listener here */
-
-        /*Button finishButton = new Button(factionsComposite, SWT.PUSH);
-        finishButton.setText("Finish");
-        GridData finishData = new GridData(SWT.END, SWT.CENTER, false, false);
-        finishData.widthHint = 70; finishData.heightHint = 30;
-        cancelButton.setLayoutData(finishData);*/
-    }
-
-    /**
-     *
-     * */
-    private static void addListeners() {
-        ftree.addSelectionListener(XmlManagerListeners.propertiesTreeSL());
-    }
-
-    /**
-     *
-     * */
-    public void open() {
-        fshell.open();
     }
 
     /**
@@ -209,6 +201,11 @@ public class XmlFilePropertiesViewer {
         createAnotherTable = true;
         fillCompositeWithRoot(root);
         currentTable[0] = null;
+
+        sc.setContent(fproperties);
+        sc.setExpandHorizontal(true);
+        sc.setExpandVertical(true);
+        sc.setMinSize(fproperties.computeSize(SWT.DEFAULT, SWT.DEFAULT));
     }
 
     /**
@@ -248,7 +245,7 @@ public class XmlFilePropertiesViewer {
            String initialTitle = root.getAttributes().getNamedItem(TmfXmlStrings.ID).getNodeValue();
            IDValue.setText(initialTitle);
            IDValue.setData(XmlManagerStrings.nodeKey, root);
-           IDValue.addModifyListener(XmlManagerListeners.textML(IDValue, initialTitle, root));
+           IDValue.addModifyListener(XmlManagerListeners.textML(IDValue, initialTitle, root, TmfXmlStrings.ID));
 
            XmlManagerUtils.addBasicMenuToText(IDValue);
 
@@ -284,7 +281,7 @@ public class XmlFilePropertiesViewer {
            String initialTitle2 = root.getAttributes().getNamedItem(TmfXmlStrings.ID).getNodeValue();
            IDValue2.setText(initialTitle2);
            IDValue2.setData(XmlManagerStrings.nodeKey, root);
-           IDValue2.addModifyListener(XmlManagerListeners.textML(IDValue2, initialTitle2, root));
+           IDValue2.addModifyListener(XmlManagerListeners.textML(IDValue2, initialTitle2, root, TmfXmlStrings.ID));
 
            break;
        case TmfXmlStrings.STATE_PROVIDER:
@@ -382,7 +379,7 @@ public class XmlFilePropertiesViewer {
            text.setLayoutData(new GridData(300, 40));
            text.setText(initialTitle);
            text.setData(XmlManagerStrings.nodeKey, child);
-           text.addModifyListener(XmlManagerListeners.textML(text, initialTitle, root));
+           text.addModifyListener(XmlManagerListeners.textML(text, initialTitle, root, TmfXmlStrings.VALUE));
            XmlManagerUtils.addBasicMenuToText(text);
 
            @SuppressWarnings("unused")
@@ -409,7 +406,8 @@ public class XmlFilePropertiesViewer {
            analysisIDValue.setLayoutData(new GridData(300, 40));
            String initialTitle2 = child.getAttributes().getNamedItem(TmfXmlStrings.ID).getNodeValue();
            analysisIDValue.setText(initialTitle2);
-           analysisIDValue.addModifyListener(XmlManagerListeners.textML(analysisIDValue, initialTitle2, root));
+           analysisIDValue.setData(XmlManagerStrings.nodeKey, child);
+           analysisIDValue.addModifyListener(XmlManagerListeners.textML(analysisIDValue, initialTitle2, root, TmfXmlStrings.ID));
 
            XmlManagerUtils.addBasicMenuToText(analysisIDValue);
 
@@ -661,16 +659,22 @@ public class XmlFilePropertiesViewer {
                                            }
                                            break;
                                        case SWT.Modify:
-                                           try {
-                                               String newText = types.getText();
-                                               Node entryChild = (Node) item.getData(XmlManagerStrings.nodeKey);
-                                               File copyFile = (File) root.getUserData(XmlManagerStrings.fileKey);
+                                           addChange(item.hashCode(), new Runnable() {
 
-                                               XmlUtils.setNewAttribute(copyFile, XmlUtils.getOriginalXmlFile(copyFile), entryChild,
-                                                       entryAttributeTable.getColumn(column).getText(), newText);
-                                           } catch (ParserConfigurationException | SAXException | IOException | TransformerException e1) {
-                                               e1.printStackTrace();
-                                           }
+                                                @Override
+                                                public void run() {
+                                                    try {
+                                                        String newText = types.getText();
+                                                        Node entryChild = (Node) item.getData(XmlManagerStrings.nodeKey);
+                                                        File copyFile = (File) root.getUserData(XmlManagerStrings.fileKey);
+
+                                                        XmlUtils.setNewAttribute(copyFile, XmlUtils.getOriginalXmlFile(copyFile), entryChild,
+                                                                entryAttributeTable.getColumn(column).getText(), newText);
+                                                    } catch (ParserConfigurationException | SAXException | IOException | TransformerException e1) {
+                                                        e1.printStackTrace();
+                                                    }
+                                                }
+                                            });
                                            break;
                                        default:
                                            break;
@@ -711,16 +715,22 @@ public class XmlFilePropertiesViewer {
                                            }
                                            break;
                                        case SWT.Modify:
-                                           try {
-                                               String newText = text.getText();
-                                               Node entryChild = (Node) item.getData(XmlManagerStrings.nodeKey);
-                                               File copyFile = (File) root.getUserData(XmlManagerStrings.fileKey);
+                                           addChange(item.hashCode(), new Runnable() {
 
-                                               XmlUtils.setNewAttribute(copyFile, XmlUtils.getOriginalXmlFile(copyFile), entryChild,
-                                                       entryAttributeTable.getColumn(column).getText(), newText);
-                                           } catch (ParserConfigurationException | SAXException | IOException | TransformerException e1) {
-                                               e1.printStackTrace();
-                                           }
+                                                @Override
+                                                public void run() {
+                                                    try {
+                                                        String newText = text.getText();
+                                                        Node entryChild = (Node) item.getData(XmlManagerStrings.nodeKey);
+                                                        File copyFile = (File) root.getUserData(XmlManagerStrings.fileKey);
+
+                                                        XmlUtils.setNewAttribute(copyFile, XmlUtils.getOriginalXmlFile(copyFile), entryChild,
+                                                                entryAttributeTable.getColumn(column).getText(), newText);
+                                                    } catch (ParserConfigurationException | SAXException | IOException | TransformerException e1) {
+                                                        e1.printStackTrace();
+                                                    }
+                                                }
+                                            });
                                            break;
                                        default:
                                            break;
@@ -767,16 +777,22 @@ public class XmlFilePropertiesViewer {
                                            }
                                            break;
                                        case SWT.Modify:
-                                           try {
-                                               String newText = types.getText();
-                                               Node entryChild = (Node) item.getData(XmlManagerStrings.nodeKey);
-                                               File copyFile = (File) root.getUserData(XmlManagerStrings.fileKey);
+                                           addChange(item.hashCode(), new Runnable() {
 
-                                               XmlUtils.setNewAttribute(copyFile, XmlUtils.getOriginalXmlFile(copyFile), entryChild,
-                                                       entryAttributeTable.getColumn(column).getText(), newText);
-                                           } catch (ParserConfigurationException | SAXException | IOException | TransformerException e1) {
-                                               e1.printStackTrace();
-                                           }
+                                                @Override
+                                                public void run() {
+                                                    try {
+                                                        String newText = types.getText();
+                                                        Node entryChild = (Node) item.getData(XmlManagerStrings.nodeKey);
+                                                        File copyFile = (File) root.getUserData(XmlManagerStrings.fileKey);
+
+                                                        XmlUtils.setNewAttribute(copyFile, XmlUtils.getOriginalXmlFile(copyFile), entryChild,
+                                                                entryAttributeTable.getColumn(column).getText(), newText);
+                                                    } catch (ParserConfigurationException | SAXException | IOException | TransformerException e1) {
+                                                        e1.printStackTrace();
+                                                    }
+                                                }
+                                           });
                                            break;
                                        default:
                                            break;
@@ -805,5 +821,44 @@ public class XmlFilePropertiesViewer {
                }
            }
        });
+   }
+
+   /**
+     * @param id
+     *              The ID associate with this method. In facts, this ID must be
+     *              the one of the widget on which the event occured
+     * @param method
+     *              The method to be called later
+     * @return
+     *              Whether a method with this ID is actually present or not
+     */
+   public static boolean addChange(int id, Runnable method) {
+       return unapplyChanges.put(id, method) == null ? false:true;
+   }
+
+   /**
+     * This method execute all the changes on the XML file at one time.
+     * It clears the map after the execution.
+     */
+   public static void applyAllChanges() {
+       for(Runnable method : unapplyChanges.values()) {
+           method.run();
+       }
+       // update the roots node
+       TmfXmlManagerParser parser = null;
+       try {
+           parser = new TmfXmlManagerParser(fxmlFile.getPath());
+       } catch (ParserConfigurationException | SAXException | IOException e) {
+           e.printStackTrace();
+       }
+       if(parser != null) {
+           List<Node> roots = parser.getRoots();
+           TreeItem[] treeItems = ftree.getItems();
+           for(int i = 0; i < roots.size() && i < treeItems.length; i++) {
+               Node root = roots.get(i); root.setUserData(XmlManagerStrings.fileKey, fxmlFile, null);
+               treeItems[i].setData(XmlManagerStrings.nodeKey, roots.get(i));
+           }
+       }
+       unapplyChanges.clear();
    }
 }

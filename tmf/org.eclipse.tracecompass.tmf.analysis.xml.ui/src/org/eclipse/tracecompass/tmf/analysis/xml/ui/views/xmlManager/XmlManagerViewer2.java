@@ -106,6 +106,6 @@ public class XmlManagerViewer2 {
 
         removeXmlFile.addSelectionListener(XmlManagerListeners.removeXmlFileSL(xmlFilesTree));
 
-        editFile.addSelectionListener(XmlManagerListeners.editXmlFileSL(xmlFilesTree));
+        editFile.addSelectionListener(XmlManagerListeners.editXmlFileSL(fparent, xmlFilesTree));
     }
 }
