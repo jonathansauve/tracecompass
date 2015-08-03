@@ -527,6 +527,49 @@ public class XmlUtils {
     }
 
     /**
+     * @param node
+     *              The node to get the attribute
+     * @param attribute
+     *              The attribute name : one in <code>TmfXmlStrings</code> class or
+     *              <code>TmfXmlUiStrings</code> class
+     * @param xmlFile
+     *              The xmlFile contains this node
+     * @return
+     *              The original attribute value, from the file
+     */
+    public static String getAttributeValueInFile(Node node, String attribute, File xmlFile) {
+        boolean valid = xmlFileIsActive(xmlFile);
+
+        if(valid) {
+            DocumentBuilderFactory dbFact = DocumentBuilderFactory.newInstance();
+            DocumentBuilder dBuilder;
+            Document doc;
+
+            try {
+                dBuilder = dbFact.newDocumentBuilder();
+                doc = dBuilder.parse(xmlFile);
+            } catch (ParserConfigurationException | SAXException | IOException e) {
+                e.printStackTrace();
+                return null; // parsing error
+            }
+
+            NodeList nodes = doc.getElementsByTagName(node.getNodeName());
+            for(int i = 0; i < nodes.getLength(); i++) {
+                Node fileNode = nodes.item(i);
+                if(fileNode.isEqualNode(node)) {
+                    Node attributeNode = fileNode.getAttributes().getNamedItem(attribute);
+                    if(attributeNode != null) {
+                        return attributeNode.getNodeValue();
+                    }
+                }
+            }
+
+            return ""; //node not found //$NON-NLS-1$
+        }
+        return null; //file not valid
+    }
+
+    /**
      * @param newNode
      *              The node to be appended
      * @param parent

@@ -330,20 +330,30 @@ public class XmlManagerListeners {
             @Override
             public void widgetSelected(SelectionEvent e) {
                 TreeItem selectedItem = (TreeItem) e.item;
+                TreeItem[] children = tree.getItems();
+                boolean found = false;
+                for(int i = 0; i < children.length; i++) {
+                    if(selectedItem.hashCode() == children[i].hashCode()) {
+                        XmlFilePropertiesViewer.lastSelectedItemIndex = i;
+                        found = true;
+                    }
+                }
+                if(!found) {
+                    XmlFilePropertiesViewer.lastSelectedItemIndex = 0;
+                }
                 Node root = (Node) selectedItem.getData(XmlManagerStrings.nodeKey);
                 if(!selectedItem.equals(XmlFilePropertiesViewer.lastSelectedItem)) {
                     int returnCode = 0;
-                    if(XmlFilePropertiesViewer.changesInStandby()) {
+                    if(XmlFilePropertiesViewer.modifsInStandby()) {
                         MessageDialog dialog = new MessageDialog(Display.getDefault().getActiveShell(),
                                 "Unsaved changes", null, "There are unsaved changes for this XML part. What do you want to do?",
                                 MessageDialog.QUESTION, new String[] {"Close without saving", "Cancel", "Save and close"}, 0);
                                 returnCode = dialog.open();
-                                System.out.println(returnCode);
                     }
                     switch(returnCode) {
                     // close without saving
                     case 0:
-                        XmlFilePropertiesViewer.clearChanges();
+                        XmlFilePropertiesViewer.clearModifs();
                         XmlFilePropertiesViewer.fillComposite(root);
                         XmlFilePropertiesViewer.lastSelectedItem = selectedItem;
                         break;
@@ -353,7 +363,7 @@ public class XmlManagerListeners {
                         break;
                     // save and close
                     case 2:
-                        XmlFilePropertiesViewer.applyAllChanges();
+                        XmlFilePropertiesViewer.applyAllModifs();
                         XmlFilePropertiesViewer.fillComposite(root);
                         XmlFilePropertiesViewer.lastSelectedItem = selectedItem;
                         break;
@@ -398,7 +408,7 @@ public class XmlManagerListeners {
                     int returnCode = path.open();
                     if (returnCode == Window.OK) {
                         currentPathValue.setText(path.getBuildPath());
-                        XmlFilePropertiesViewer.addChange(button.hashCode(), new Runnable() {
+                        XmlFilePropertiesViewer.addModif(button.hashCode(), new Runnable() {
 
                             @Override
                             public void run() {
@@ -446,7 +456,7 @@ public class XmlManagerListeners {
 
                 if (!initialTitle.equals(text.getText())) {
                     text.setText(initialTitle);
-                    XmlFilePropertiesViewer.addChange(text.hashCode(), new Runnable() {
+                    XmlFilePropertiesViewer.addModif(text.hashCode(), new Runnable() {
 
                         @Override
                         public void run() {
@@ -493,7 +503,7 @@ public class XmlManagerListeners {
 
                 if (!initialTitle.equals(text.getText()))
                 {
-                    XmlFilePropertiesViewer.addChange(text.hashCode(), new Runnable() {
+                    XmlFilePropertiesViewer.addModif(text.hashCode(), new Runnable() {
 
                         @Override
                         public void run() {
@@ -591,7 +601,7 @@ public class XmlManagerListeners {
 
                                 final RGB newRgb = dialog.open();
                                 if(newRgb != null) {
-                                    XmlFilePropertiesViewer.addChange(item.hashCode(), new Runnable() {
+                                    XmlFilePropertiesViewer.addModif(item.hashCode(), new Runnable() {
 
                                         @Override
                                         public void run() {
@@ -603,7 +613,6 @@ public class XmlManagerListeners {
                                                 e1.printStackTrace();
                                                 return;
                                             }
-
                                         }
                                     });
                                     item.setBackground(column, new Color(Display.getDefault(), newRgb));
@@ -626,8 +635,6 @@ public class XmlManagerListeners {
     /**
      * @param shell
      *              The shell that triggers the action
-     * @param unsavedChanges
-     *              Whether there are unsaved changes to the XML files
      * @return
      *              The new selection listener
      */
@@ -637,7 +644,7 @@ public class XmlManagerListeners {
             @Override
             public void handleEvent(Event event) {
                 int returnCode = 0;
-                if(XmlFilePropertiesViewer.changesInStandby()) {
+                if(XmlFilePropertiesViewer.modifsInStandby()) {
                     MessageDialog dialog = new MessageDialog(Display.getDefault().getActiveShell(),
                             "Unsaved changes", null, "The changes have not been apply. What do you want to do?",
                             MessageDialog.QUESTION, new String[] {"Close without saving", "Cancel", "Save and close"}, 0);
@@ -647,7 +654,7 @@ public class XmlManagerListeners {
                 switch(returnCode) {
                 // close without saving
                 case 0:
-                    XmlFilePropertiesViewer.clearChanges();
+                    XmlFilePropertiesViewer.clearModifs();
                     shell.close();
                     break;
                 //cancel
@@ -656,7 +663,7 @@ public class XmlManagerListeners {
                     break;
                 // save and close
                 case 2:
-                    XmlFilePropertiesViewer.applyAllChanges();
+                    XmlFilePropertiesViewer.applyAllModifs();
                     shell.close();
                     break;
                 // same as cancel
@@ -689,7 +696,25 @@ public class XmlManagerListeners {
 
             @Override
             public void widgetSelected(SelectionEvent e) {
-                XmlFilePropertiesViewer.applyAllChanges();
+                XmlFilePropertiesViewer.applyAllModifs();
+            }
+
+            @Override
+            public void widgetDefaultSelected(SelectionEvent e) { }
+        };
+    }
+
+    /**
+     * This handler restore the initial values of the properties
+     * @return
+     *              The new selection listener
+     */
+    public static SelectionListener restoreDefaultsSL() {
+        return new SelectionListener() {
+
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                XmlFilePropertiesViewer.restoreDefaults();
             }
 
             @Override

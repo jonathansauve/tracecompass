@@ -78,6 +78,11 @@ public class XmlFilePropertiesViewer extends Dialog {
          * The last selected item in the tree
          */
         public static TreeItem lastSelectedItem;
+        /**
+         * The index of {@link XmlFilePropertiesViewer#lastSelectedItem}
+         * 0 by default
+         */
+        public static int lastSelectedItemIndex = 0;
         private static Composite fcomposite;
             private static ScrolledComposite sc;
                 private static Composite fproperties;
@@ -90,7 +95,9 @@ public class XmlFilePropertiesViewer extends Dialog {
                         private static Button restoreDefaults;
                         private static Button saveChanges;
 
-    private static Map<Integer, Runnable> unapplyChanges = new HashMap<>();
+    private static Map<Integer, Runnable> unappliedModif = new HashMap<>();
+    private static Map<Integer, Runnable> originalValuesOfModifs = new HashMap<>();
+    private static List<Node> initialValues = new ArrayList<>();
 
     /**
      * Public constructor
@@ -156,6 +163,7 @@ public class XmlFilePropertiesViewer extends Dialog {
             List<Node> roots = parser.getRoots();
             for(Node root : roots) {
                 root.setUserData(XmlManagerStrings.fileKey, fxmlFile, null);
+                initialValues.add(root);
                 TreeItem item = new TreeItem(ftree, SWT.NONE);
                 item.setText(root.getNodeName());
                 item.setData(XmlManagerStrings.nodeKey, root);
@@ -182,7 +190,7 @@ public class XmlFilePropertiesViewer extends Dialog {
         restoreDefaults = new Button(fchanges, SWT.PUSH);
         restoreDefaults.setText("Restore Defaults");
         restoreDefaults.setLayoutData(new GridData(140, 30));
-        /* add listener here */
+        restoreDefaults.addSelectionListener(XmlManagerListeners.restoreDefaultsSL());
 
         saveChanges = new Button(fchanges, SWT.PUSH);
         saveChanges.setText("Save Changes");
@@ -663,7 +671,7 @@ public class XmlFilePropertiesViewer extends Dialog {
                                            }
                                            break;
                                        case SWT.Modify:
-                                           addChange(item.hashCode(), new Runnable() {
+                                           addModif(item.hashCode(), new Runnable() {
 
                                                 @Override
                                                 public void run() {
@@ -677,6 +685,12 @@ public class XmlFilePropertiesViewer extends Dialog {
                                                     } catch (ParserConfigurationException | SAXException | IOException | TransformerException e1) {
                                                         e1.printStackTrace();
                                                     }
+                                                }
+                                            }, new Runnable() {
+
+                                                @Override
+                                                public void run() {
+
                                                 }
                                             });
                                            break;
@@ -719,7 +733,7 @@ public class XmlFilePropertiesViewer extends Dialog {
                                            }
                                            break;
                                        case SWT.Modify:
-                                           addChange(item.hashCode(), new Runnable() {
+                                           addModif(item.hashCode(), new Runnable() {
 
                                                 @Override
                                                 public void run() {
@@ -781,7 +795,7 @@ public class XmlFilePropertiesViewer extends Dialog {
                                            }
                                            break;
                                        case SWT.Modify:
-                                           addChange(item.hashCode(), new Runnable() {
+                                           addModif(item.hashCode(), new Runnable() {
 
                                                 @Override
                                                 public void run() {
@@ -831,21 +845,25 @@ public class XmlFilePropertiesViewer extends Dialog {
      * @param id
      *              The ID associate with this method. In facts, this ID must be
      *              the one of the widget on which the event occured
-     * @param method
+     * @param newValueMethod
      *              The method to be called later
+     * @param originalValueMethod
+     *              The method to be called to restore the original value that
+     *              <code>newValueMethod</code> have changed
      * @return
      *              Whether a method with this ID is actually present or not
      */
-   public static boolean addChange(int id, Runnable method) {
-       return unapplyChanges.put(id, method) == null ? false:true;
+   public static boolean addModif(int id, Runnable newValueMethod, Runnable originalValueMethod) {
+       originalValuesOfModifs.put(id, originalValueMethod);
+       return unappliedModif.put(id, newValueMethod) == null ? false:true;
    }
 
    /**
      * This method execute all the changes on the XML file at one time.
      * It clears the map after the execution.
      */
-   public static void applyAllChanges() {
-       for(Runnable method : unapplyChanges.values()) {
+   public static void applyAllModifs() {
+       for(Runnable method : unappliedModif.values()) {
            method.run();
        }
        // update the roots node
@@ -863,21 +881,52 @@ public class XmlFilePropertiesViewer extends Dialog {
                treeItems[i].setData(XmlManagerStrings.nodeKey, roots.get(i));
            }
        }
-       unapplyChanges.clear();
+       unappliedModif.clear();
    }
 
    /**
      * @return
      *              True if there are changes in standby, false otherwise
      */
-    public static boolean changesInStandby() {
-           return !unapplyChanges.isEmpty();
+    public static boolean modifsInStandby() {
+           return !unappliedModif.isEmpty();
        }
 
     /**
      * Clear all the changes in standby, without applying them
      */
-    public static void clearChanges() {
-        unapplyChanges.clear();
+    public static void clearModifs() {
+        unappliedModif.clear();
+    }
+
+    /**
+     *
+     */
+    public static void restoreDefaults() {
+        for(Runnable method : originalValuesOfModifs.values()) {
+            method.run();
+        }
+
+        TreeItem[] items = ftree.getItems();
+        for(int i = 0; i < items.length; i++) {
+            items[i].dispose();
+        }
+
+        for(Node root : initialValues) {
+            TreeItem item = new TreeItem(ftree, SWT.NONE);
+            item.setText(root.getNodeName());
+            item.setData(XmlManagerStrings.nodeKey, root);
+        }
+
+        unappliedModif.clear();
+
+        Control[] children = fproperties.getChildren();
+        for(int i = 0; i < children.length; i++) {
+            children[i].dispose();
+        }
+        ftree.select(ftree.getItem(lastSelectedItemIndex));
+        Event event = new Event();
+        event.item = ftree.getItem(lastSelectedItemIndex);
+        ftree.notifyListeners(SWT.Selection, event);
     }
 }
