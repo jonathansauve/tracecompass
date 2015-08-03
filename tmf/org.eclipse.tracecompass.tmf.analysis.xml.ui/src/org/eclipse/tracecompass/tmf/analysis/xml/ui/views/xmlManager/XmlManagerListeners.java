@@ -462,13 +462,7 @@ public class XmlManagerListeners {
                         public void run() {
                             try {
                                 XmlUtils.setNewAttribute(xmlFile, XmlUtils.getOriginalXmlFile(xmlFile), oldNode, TmfXmlStrings.VALUE, text.getText());
-                            } catch (ParserConfigurationException e1) {
-                                e1.printStackTrace();
-                            } catch (SAXException e1) {
-                                e1.printStackTrace();
-                            } catch (IOException e1) {
-                                e1.printStackTrace();
-                            } catch (TransformerException e1) {
+                            } catch (ParserConfigurationException | SAXException | IOException | TransformerException e1) {
                                 e1.printStackTrace();
                             }
                         }
@@ -714,7 +708,14 @@ public class XmlManagerListeners {
 
             @Override
             public void widgetSelected(SelectionEvent e) {
-                XmlFilePropertiesViewer.restoreDefaults();
+                MessageBox messageBox = new MessageBox(Display.getDefault().getActiveShell(), SWT.ICON_QUESTION
+                        | SWT.YES | SWT.NO);
+                messageBox.setMessage("You are going to restore all the initial values. Are you sure you wanna lose all the changes that you've done?");
+                messageBox.setText("Restoring Defaults");
+                int answer = messageBox.open();
+                if(answer == SWT.YES) {
+                    XmlFilePropertiesViewer.restoreDefaults();
+                }
             }
 
             @Override
