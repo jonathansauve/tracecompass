@@ -555,12 +555,14 @@ public class XmlManagerListeners {
                                         switch(e.type) {
                                         case SWT.FocusOut:
                                             item.setText(column, text.getText());
+                                            notifyChange(item, child);
                                             text.dispose();
                                             break;
                                         case SWT.Traverse:
                                             switch (e.detail) {
                                             case SWT.TRAVERSE_RETURN:
                                                 item.setText(column, text.getText());
+                                                notifyChange(item, child);
                                                 //$FALL-THROUGH$
                                             case SWT.TRAVERSE_ESCAPE:
                                                 text.dispose();
@@ -595,20 +597,7 @@ public class XmlManagerListeners {
 
                                 final RGB newRgb = dialog.open();
                                 if(newRgb != null) {
-                                    XmlFilePropertiesViewer.addModif(item.hashCode(), new Runnable() {
-
-                                        @Override
-                                        public void run() {
-                                            try {
-                                                File copyFile = (File) root.getUserData(XmlManagerStrings.fileKey);
-                                                XmlUtils.setNewAttribute(copyFile, XmlUtils.getOriginalXmlFile(copyFile), child, TmfXmlStrings.COLOR,
-                                                        XmlManagerUtils.rgbToHexa(newRgb.red, newRgb.green, newRgb.blue));
-                                            } catch (ParserConfigurationException | SAXException | IOException | TransformerException e1) {
-                                                e1.printStackTrace();
-                                                return;
-                                            }
-                                        }
-                                    });
+                                    notifyChange(item, child);
                                     item.setBackground(column, new Color(Display.getDefault(), newRgb));
                                 }
                             }
@@ -617,11 +606,32 @@ public class XmlManagerListeners {
                             visible = true;
                         }
                     }
+
                     if (!visible) {
                         return;
                     }
                     index++;
                 }
+            }
+
+            void notifyChange(final TableItem item, final Node child) {
+                XmlFilePropertiesViewer.addModif(item.hashCode(), new Runnable() {
+
+                    @Override
+                    public void run() {
+                        try {
+                            File copyFile = (File) root.getUserData(XmlManagerStrings.fileKey);
+                            XmlUtils.setNewAttribute(copyFile, XmlUtils.getOriginalXmlFile(copyFile), child, TmfXmlStrings.NAME,
+                                    item.getText(0));
+                            RGB color = item.getBackground(1).getRGB();
+                            XmlUtils.setNewAttribute(copyFile, XmlUtils.getOriginalXmlFile(copyFile), child, TmfXmlStrings.COLOR,
+                                    XmlManagerUtils.rgbToHexa(color.red, color.green, color.blue));
+                        } catch (ParserConfigurationException | SAXException | IOException | TransformerException e1) {
+                            e1.printStackTrace();
+                            return;
+                        }
+                    }
+                });
             }
         };
     }

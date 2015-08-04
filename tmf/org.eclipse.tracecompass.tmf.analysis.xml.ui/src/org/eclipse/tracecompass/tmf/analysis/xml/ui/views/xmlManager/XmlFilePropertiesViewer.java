@@ -55,6 +55,7 @@ import org.eclipse.swt.widgets.TreeItem;
 import org.eclipse.tracecompass.internal.tmf.analysis.xml.ui.TmfXmlUiStrings;
 import org.eclipse.tracecompass.tmf.analysis.xml.core.module.XmlUtils;
 import org.eclipse.tracecompass.tmf.analysis.xml.core.stateprovider.TmfXmlStrings;
+import org.eclipse.tracecompass.tmf.core.util.Pair;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -67,25 +68,25 @@ import org.xml.sax.SAXException;
 @SuppressWarnings({"nls"})
 public class XmlFilePropertiesViewer extends Dialog {
 
-    private static File fxmlFile;
+    private static File fxmlFile = null;
 
-    private static Shell fshell;
-    private static Composite fparent;
+    private static Shell fshell = null;
+    private static Composite fparent = null;
 
-    private static SashForm fsash;
-        private static Tree ftree;
+    private static SashForm fsash = null;
+        private static Tree ftree = null;
         /**
          * The last selected item in the tree
          */
-        public static TreeItem lastSelectedItem;
+        public static TreeItem lastSelectedItem = null;
         /**
          * The index of {@link XmlFilePropertiesViewer#lastSelectedItem}
          * 0 by default
          */
         public static int lastSelectedItemIndex = 0;
-        private static Composite fcomposite;
-            private static ScrolledComposite sc;
-                private static Composite fproperties;
+        private static Composite fcomposite = null;
+            private static ScrolledComposite sc = null;
+                private static Composite fproperties = null;
                     /**
                      * A boolean to know if a table as been already create
                      */
@@ -110,6 +111,9 @@ public class XmlFilePropertiesViewer extends Dialog {
         super(parentShell);
         super.setShellStyle(super.getShellStyle() | SWT.SHELL_TRIM);
         fxmlFile = xmlFile;
+        unappliedModif.clear();
+        originalValuesOfModifs.clear();
+        initialValues.clear();
     }
 
     @Override
@@ -178,8 +182,6 @@ public class XmlFilePropertiesViewer extends Dialog {
         sc.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
         fproperties = new Composite(sc, SWT.NONE);
-        fproperties.setLayout(XmlManagerUtils.createGridLayout(1, 0, 0));
-        fproperties.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
         fchanges = new Composite(fcomposite, SWT.NONE);
         GridLayout changesCompositeLayout = new GridLayout(2, false);
@@ -621,7 +623,8 @@ public class XmlFilePropertiesViewer extends Dialog {
     * @param entry
     *            The entry node
     * */
-   private static void createEntryTable(final Node root, final Node entry) {
+   @SuppressWarnings("null")
+private static void createEntryTable(final Node root, final Node entry) {
        if (!entry.getNodeName().equals(TmfXmlUiStrings.ENTRY_ELEMENT)) {
            return;
        }
@@ -641,7 +644,6 @@ public class XmlFilePropertiesViewer extends Dialog {
        entryAttributeTable.setLinesVisible(true);
        entryAttributeTable.setHeaderVisible(true);
        entryAttributeTable.setLayout(new TableLayout());
-       //entryAttributeTable.setLayoutData(new GridData(300, 150));
        entryAttributeTable.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true));
 
        TableColumn attributeColumn = new TableColumn(entryAttributeTable, SWT.NONE);
@@ -651,7 +653,7 @@ public class XmlFilePropertiesViewer extends Dialog {
 
        /* Find all the column headers */
        List<String> columnsHeaders = new ArrayList<>();
-       NodeList entryChildren = entry.getChildNodes();
+       final NodeList entryChildren = entry.getChildNodes();
        for (int j = 0; j < entryChildren.getLength(); j++) {
            if (!entryChildren.item(j).getNodeName().equals("#text")) { //$NON-NLS-1$
                NamedNodeMap childAttributes = entryChildren.item(j).getAttributes();
@@ -681,9 +683,10 @@ public class XmlFilePropertiesViewer extends Dialog {
        /* Fill the table */
        for (int j = 0; j < entryChildren.getLength(); j++) {
            if (!entryChildren.item(j).getNodeName().equals("#text")) { //$NON-NLS-1$
+               final List<Pair<String, String>> attNameAndValue = new ArrayList<>();
+               final int currentIndex = j;
                TableItem row = new TableItem(entryAttributeTable, SWT.NONE);
                row.setText(0, entryChildren.item(j).getNodeName());
-               // row.setData(entryChildren.item(j));
                row.setData(XmlManagerStrings.nodeKey, entryChildren.item(j));
 
                NamedNodeMap childAttributes = entryChildren.item(j).getAttributes();
@@ -692,9 +695,28 @@ public class XmlFilePropertiesViewer extends Dialog {
                    for (int l = 0; l < columns.length; l++) {
                        if (columns[l].getText().equals(childAttributes.item(k).getNodeName())) {
                            row.setText(l, childAttributes.item(k).getNodeValue());
+                           attNameAndValue.add(new Pair<>(childAttributes.item(k).getNodeName(),
+                                   childAttributes.item(k).getNodeValue()));
                        }
                    }
                }
+
+               originalValuesOfModifs.put(row.hashCode(), new Runnable() {
+
+                    @Override
+                    public void run() {
+                        File copyFile = (File) root.getUserData(XmlManagerStrings.fileKey);
+                        for(int k = 0; k < attNameAndValue.size(); k++) {
+                            try {
+                                XmlUtils.setNewAttribute(copyFile, XmlUtils.getOriginalXmlFile(copyFile), entryChildren.item(currentIndex),
+                                        attNameAndValue.get(k).getFirst(), attNameAndValue.get(k).getSecond());
+                            } catch (ParserConfigurationException | SAXException | IOException | TransformerException e) {
+                                e.printStackTrace();
+                                return;
+                            }
+                        }
+                    }
+                });
            }
        }
 
@@ -716,7 +738,7 @@ public class XmlFilePropertiesViewer extends Dialog {
                            final int column = j;
                            final TableColumn tableColumn = entryAttributeTable.getColumn(j);
                            if (tableColumn.getText().equals("Attribute")) { //$NON-NLS-1$
-                               final Combo types = new Combo(entryAttributeTable, SWT.READ_ONLY);
+                               final Combo types = new Combo(entryAttributeTable, SWT.READ_ONLY | SWT.DROP_DOWN);
                                String rootType = root.getNodeName();
                                String[] possibleTypes = null;
                                if (rootType.equals(TmfXmlUiStrings.TIME_GRAPH_VIEW)) {
@@ -762,12 +784,12 @@ public class XmlFilePropertiesViewer extends Dialog {
                                                 @Override
                                                 public void run() {
                                                     try {
-                                                        String newText = types.getText();
+                                                        String newText = item.getText();
                                                         Node entryChild = (Node) item.getData(XmlManagerStrings.nodeKey);
                                                         File copyFile = (File) root.getUserData(XmlManagerStrings.fileKey);
 
                                                         XmlUtils.setNewAttribute(copyFile, XmlUtils.getOriginalXmlFile(copyFile), entryChild,
-                                                                entryAttributeTable.getColumn(column).getText(), newText);
+                                                                null, newText);
                                                     } catch (ParserConfigurationException | SAXException | IOException | TransformerException e1) {
                                                         e1.printStackTrace();
                                                     }

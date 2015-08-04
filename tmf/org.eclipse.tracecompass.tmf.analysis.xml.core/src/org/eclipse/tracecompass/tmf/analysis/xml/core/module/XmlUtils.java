@@ -52,6 +52,7 @@ import org.eclipse.tracecompass.tmf.core.util.Pair;
 import org.osgi.framework.BundleContext;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
@@ -348,14 +349,16 @@ public class XmlUtils {
      * @param node
      *              The node to set the new value
      * @param attribute
-     *              The attribute to change
+     *              The attribute to change. If its <code>null</code>,
+     *              we need to change the node name
      * @param value
-     *              The new value
+     *              The new value for the attribute, or the node name
      * @throws ParserConfigurationException
      * @throws IOException
      * @throws SAXException
      * @throws TransformerException
-     * @return Whether the attribute was successfully setted
+     * @return
+     *              Whether the attribute was successfully setted
      * @since 2.0
      */
     @SuppressWarnings("javadoc")
@@ -375,11 +378,26 @@ public class XmlUtils {
         boolean docChanged = false;
         NodeList nodes = doc.getElementsByTagName(node.getNodeName());
         for(int i = 0; i < nodes.getLength(); i++) {
+            Node currentNode = nodes.item(i);
             if(nodes.item(i).isEqualNode(node)) {
-                if(nodes.item(i).getAttributes().getNamedItem(attribute) != null) {
-                    nodes.item(i).getAttributes().getNamedItem(attribute).setNodeValue(value);
-                    docChanged = true;
+                if(attribute != null) {
+                    if(nodes.item(i).getAttributes().getNamedItem(attribute) != null) {
+                        nodes.item(i).getAttributes().getNamedItem(attribute).setNodeValue(value);
+                    }
+                } else {
+                    Node parent = currentNode.getParentNode();
+                    // create a new node with the new NodeName value
+                    Element newChild = doc.createElement(value);
+                    // copy all the attributes from the oldNode
+                    NamedNodeMap attributes = currentNode.getAttributes();
+                    for(int j = 0; j < attributes.getLength(); j++) {
+                        Node att = attributes.item(j);
+                        newChild.setAttribute(att.getNodeName(), att.getNodeValue());
+                    }
+                    // replace the node by the new one in the parent
+                    parent.replaceChild(newChild, currentNode);
                 }
+                docChanged = true;
                 break;
             }
         }
@@ -387,11 +405,26 @@ public class XmlUtils {
         boolean originalDocChanged = false;
         NodeList originalNodes = originalDoc.getElementsByTagName(node.getNodeName());
         for(int i = 0; i < originalNodes.getLength(); i++) {
-            if(originalNodes.item(i).isEqualNode(node)) {
-                if(originalNodes.item(i).getAttributes().getNamedItem(attribute) != null) {
-                    originalNodes.item(i).getAttributes().getNamedItem(attribute).setNodeValue(value);
-                    originalDocChanged = true;
+            Node currentNode = originalNodes.item(i);
+            if(currentNode.isEqualNode(node)) {
+                if(attribute != null) {
+                    if(currentNode.getAttributes().getNamedItem(attribute) != null) {
+                        currentNode.getAttributes().getNamedItem(attribute).setNodeValue(value);
+                    }
+                } else {
+                    Node parent = currentNode.getParentNode();
+                    // create a new node with the new NodeName value
+                    Element newChild = originalDoc.createElement(value);
+                    // copy all the attributes from the oldNode
+                    NamedNodeMap attributes = currentNode.getAttributes();
+                    for(int j = 0; j < attributes.getLength(); j++) {
+                        Node att = attributes.item(j);
+                        newChild.setAttribute(att.getNodeName(), att.getNodeValue());
+                    }
+                    // replace the node by the new one in the parent
+                    parent.replaceChild(newChild, currentNode);
                 }
+                originalDocChanged = true;
                 break;
             }
         }
