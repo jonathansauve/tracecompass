@@ -867,7 +867,7 @@ public class XmlManagerViewer {
                                         text.setText(initialTitle);
                                         try {
                                             File copyFile = (File) root.getUserData(userDataFileKey);
-                                            XmlUtils.setNewAttribute(copyFile, XmlUtils.getOriginalXmlFile(copyFile), oldNode, TmfXmlStrings.VALUE, text.getText());
+                                            XmlUtils.setNewAttribute(copyFile, oldNode, TmfXmlStrings.VALUE, text.getText());
                                         } catch (ParserConfigurationException e1) {
                                             e1.printStackTrace();
                                         } catch (SAXException e1) {
@@ -901,7 +901,7 @@ public class XmlManagerViewer {
                                     {
                                         try {
                                             File copyFile = (File) root.getUserData(userDataFileKey);
-                                            XmlUtils.setNewAttribute(copyFile, XmlUtils.getOriginalXmlFile(copyFile), oldNode, TmfXmlStrings.VALUE, text.getText());
+                                            XmlUtils.setNewAttribute(copyFile, oldNode, TmfXmlStrings.VALUE, text.getText());
                                         } catch (ParserConfigurationException e1) {
                                             e1.printStackTrace();
                                         } catch (SAXException e1) {
@@ -988,7 +988,7 @@ public class XmlManagerViewer {
                                 c.setBackground(new Color(fparent.getDisplay(), oldRgb));
                                 try {
                                     File copyFile = (File) root.getUserData(userDataFileKey);
-                                    XmlUtils.setNewAttribute(copyFile, XmlUtils.getOriginalXmlFile(copyFile), oldNode, TmfXmlStrings.COLOR,
+                                    XmlUtils.setNewAttribute(copyFile, oldNode, TmfXmlStrings.COLOR,
                                             XmlManagerUtils.rgbToHexa(oldRgb.red, oldRgb.green, oldRgb.blue));
                                 } catch (ParserConfigurationException e1) {
                                     e1.printStackTrace();
@@ -1033,7 +1033,7 @@ public class XmlManagerViewer {
                                 c.setBackground(new Color(fparent.getDisplay(), newRgb));
                                 try {
                                     File copyFile = (File) root.getUserData(userDataFileKey);
-                                    XmlUtils.setNewAttribute(copyFile, XmlUtils.getOriginalXmlFile(copyFile), oldNode, TmfXmlStrings.COLOR,
+                                    XmlUtils.setNewAttribute(copyFile, oldNode, TmfXmlStrings.COLOR,
                                             XmlManagerUtils.rgbToHexa(newRgb.red, newRgb.green, newRgb.blue));
                                 } catch (ParserConfigurationException e1) {
                                     e1.printStackTrace();
@@ -1096,7 +1096,7 @@ public class XmlManagerViewer {
                                     currentPathValue.setText(path.getBuildPath());
                                     File copyFile = (File) root.getUserData(userDataFileKey);
                                     try {
-                                        XmlUtils.setNewAttribute(copyFile, XmlUtils.getOriginalXmlFile(copyFile), oldNode, TmfXmlUiStrings.PATH, path.getBuildPath());
+                                        XmlUtils.setNewAttribute(copyFile, oldNode, TmfXmlUiStrings.PATH, path.getBuildPath());
                                     } catch (ParserConfigurationException e1) {
                                         e1.printStackTrace();
                                     } catch (SAXException e1) {
@@ -1201,7 +1201,7 @@ public class XmlManagerViewer {
                                         text.setText(initialTitle);
                                         try {
                                             File copyFile = (File) root.getUserData(userDataFileKey);
-                                            XmlUtils.setNewAttribute(copyFile, XmlUtils.getOriginalXmlFile(copyFile), oldNode, TmfXmlStrings.VALUE, text.getText());
+                                            XmlUtils.setNewAttribute(copyFile, oldNode, TmfXmlStrings.VALUE, text.getText());
                                         } catch (ParserConfigurationException e1) {
                                             e1.printStackTrace();
                                         } catch (SAXException e1) {
@@ -1235,7 +1235,7 @@ public class XmlManagerViewer {
                                     {
                                         try {
                                             File copyFile = (File) root.getUserData(userDataFileKey);
-                                            XmlUtils.setNewAttribute(copyFile, XmlUtils.getOriginalXmlFile(copyFile), oldNode, TmfXmlStrings.VALUE, text.getText());
+                                            XmlUtils.setNewAttribute(copyFile, oldNode, TmfXmlStrings.VALUE, text.getText());
                                         } catch (ParserConfigurationException e1) {
                                             e1.printStackTrace();
                                         } catch (SAXException e1) {
@@ -1302,7 +1302,7 @@ public class XmlManagerViewer {
                                     currentPathValue.setText(path.getBuildPath());
                                     File copyFile = (File) root.getUserData(userDataFileKey);
                                     try {
-                                        XmlUtils.setNewAttribute(copyFile, XmlUtils.getOriginalXmlFile(copyFile), oldNode, TmfXmlUiStrings.PATH, path.getBuildPath());
+                                        XmlUtils.setNewAttribute(copyFile, oldNode, TmfXmlUiStrings.PATH, path.getBuildPath());
                                     } catch (ParserConfigurationException e1) {
                                         e1.printStackTrace();
                                     } catch (SAXException e1) {
@@ -1764,7 +1764,7 @@ public class XmlManagerViewer {
                                                 Node entryChild = (Node) item.getData(nodeKey);
                                                 File copyFile = (File) root.getUserData(userDataFileKey);
 
-                                                XmlUtils.setNewAttribute(copyFile, XmlUtils.getOriginalXmlFile(copyFile), entryChild,
+                                                XmlUtils.setNewAttribute(copyFile, entryChild,
                                                         entryAttributeTable.getColumn(column).getText(), newText);
                                             } catch (ParserConfigurationException | SAXException | IOException | TransformerException e1) {
                                                 e1.printStackTrace();
@@ -1816,7 +1816,7 @@ public class XmlManagerViewer {
                                                 Node entryChild = (Node) item.getData(nodeKey);
                                                 File copyFile = (File) root.getUserData(userDataFileKey);
 
-                                                XmlUtils.setNewAttribute(copyFile, XmlUtils.getOriginalXmlFile(copyFile), entryChild,
+                                                XmlUtils.setNewAttribute(copyFile, entryChild,
                                                         entryAttributeTable.getColumn(column).getText(), newText);
                                             } catch (ParserConfigurationException | SAXException | IOException | TransformerException e1) {
                                                 e1.printStackTrace();
@@ -1874,7 +1874,7 @@ public class XmlManagerViewer {
                                                 Node entryChild = (Node) item.getData(nodeKey);
                                                 File copyFile = (File) root.getUserData(userDataFileKey);
 
-                                                XmlUtils.setNewAttribute(copyFile, XmlUtils.getOriginalXmlFile(copyFile), entryChild,
+                                                XmlUtils.setNewAttribute(copyFile, entryChild,
                                                         entryAttributeTable.getColumn(column).getText(), newText);
                                             } catch (ParserConfigurationException | SAXException | IOException | TransformerException e1) {
                                                 e1.printStackTrace();
@@ -1984,7 +1984,7 @@ public class XmlManagerViewer {
                             if(oldId != null) {
                                 Element analysisNode = XmlUtils.getElementInFile(dragFile.getPath(), TmfXmlStrings.ANALYSIS, oldId);
                                 try {
-                                    XmlUtils.setNewAttribute(dragFile, XmlUtils.getOriginalXmlFile(dragFile), analysisNode, TmfXmlStrings.ID, newId);
+                                    XmlUtils.setNewAttribute(dragFile, analysisNode, TmfXmlStrings.ID, newId);
                                     // Retrieve the parent (dragSourceData) in the modifiated node
                                     Node parent = findParentNodeRecursive(dragSourceData.getNodeName(), analysisNode);
 

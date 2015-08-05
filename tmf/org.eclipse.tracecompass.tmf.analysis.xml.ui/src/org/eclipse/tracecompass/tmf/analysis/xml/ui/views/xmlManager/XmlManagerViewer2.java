@@ -36,7 +36,7 @@ public class XmlManagerViewer2 {
     /** Other composites and controls */
     private SashForm xmlFilesAndActions;
 
-    private Tree xmlFilesTree;
+    private static Tree xmlFilesTree;
 
     private Composite actionsComposite;
         private Button importXmlFile;
@@ -46,8 +46,8 @@ public class XmlManagerViewer2 {
     /** Variables for the XmlFile*/
 
     /** Xml file folder and files */
-    private File activeXMLFolder = new File(XmlUtils.getXmlFilesPath().toString());
-    private File[] activeXMLs = activeXMLFolder.listFiles();
+    private static File activeXMLFolder = new File(XmlUtils.getXmlFilesPath().toString());
+    private static File[] activeXMLs = activeXMLFolder.listFiles();
 
     /**
      *
@@ -107,5 +107,23 @@ public class XmlManagerViewer2 {
         removeXmlFile.addSelectionListener(XmlManagerListeners.removeXmlFileSL(xmlFilesTree));
 
         editFile.addSelectionListener(XmlManagerListeners.editXmlFileSL(fparent, xmlFilesTree));
+    }
+
+    /**
+     * This function update the files in the tree.
+     */
+    public static void update() {
+        TreeItem[] items = xmlFilesTree.getItems();
+        activeXMLs = activeXMLFolder.listFiles();
+        for(int i = 0; i < items.length; i++) {
+            TreeItem item = items[i];
+            for(int j = 0; j < activeXMLs.length; j++) {
+                File file = activeXMLs[j];
+                if(item.getText().equals(file.getName())) {
+                    item.setData(XmlManagerStrings.fileKey, file);
+                    break;
+                }
+            }
+        }
     }
 }

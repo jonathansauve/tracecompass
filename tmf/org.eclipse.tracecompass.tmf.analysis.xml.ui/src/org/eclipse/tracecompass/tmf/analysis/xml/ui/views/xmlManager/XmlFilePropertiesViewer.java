@@ -14,6 +14,7 @@ package org.eclipse.tracecompass.tmf.analysis.xml.ui.views.xmlManager;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -61,6 +62,8 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import static java.nio.file.StandardCopyOption.*;
+
 /**
  * @author Jonathan Sauvé
  *
@@ -69,6 +72,7 @@ import org.xml.sax.SAXException;
 public class XmlFilePropertiesViewer extends Dialog {
 
     private static File fxmlFile = null;
+    private static File foriginalXmlFile = null;
 
     private static Shell fshell = null;
     private static Composite fparent = null;
@@ -110,7 +114,16 @@ public class XmlFilePropertiesViewer extends Dialog {
     public XmlFilePropertiesViewer(Shell parentShell, File xmlFile) {
         super(parentShell);
         super.setShellStyle(super.getShellStyle() | SWT.SHELL_TRIM);
-        fxmlFile = xmlFile;
+        foriginalXmlFile = xmlFile;
+        // create a temporary file to save
+        try {
+            fxmlFile = File.createTempFile("temp", ".xml");
+            Files.copy(xmlFile.toPath(), fxmlFile.toPath(), REPLACE_EXISTING);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
         unappliedModif.clear();
         originalValuesOfModifs.clear();
         initialValues.clear();
@@ -129,7 +142,7 @@ public class XmlFilePropertiesViewer extends Dialog {
 
     @Override
     protected void configureShell(Shell newShell) {
-        newShell.setText("Properties - " + fxmlFile.getName());
+        newShell.setText("Properties - " + foriginalXmlFile.getName());
         newShell.setMinimumSize(700, 800);
         newShell.setSize(700, 800);
         newShell.setLayout(XmlManagerUtils.createGridLayout(1, 0, 0));
@@ -143,8 +156,28 @@ public class XmlFilePropertiesViewer extends Dialog {
     protected void cancelPressed() {
         Button cancelButton = super.getButton(IDialogConstants.CANCEL_ID);
         if(cancelButton != null) {
-            cancelButton.addListener(SWT.Selection, XmlManagerListeners.closeShellSL(fshell));
+            cancelButton.addListener(SWT.Selection, XmlManagerListeners.closeShellSL(fshell, IDialogConstants.CANCEL_ID));
         }
+    }
+
+    @Override
+    protected void okPressed() {
+        Button okButton = super.getButton(IDialogConstants.OK_ID);
+        if(okButton != null) {
+            okButton.addListener(SWT.Selection, XmlManagerListeners.closeShellSL(fshell, IDialogConstants.OK_ID));
+        }
+    }
+
+    @Override
+    public boolean close() {
+        try {
+            Files.copy(fxmlFile.toPath(), foriginalXmlFile.toPath(), REPLACE_EXISTING);
+            Files.copy(fxmlFile.toPath(), XmlUtils.getOriginalXmlFile(foriginalXmlFile).toPath(), REPLACE_EXISTING);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        fxmlFile.delete();
+        return super.close();
     }
 
     private static void createContents() {
@@ -232,18 +265,9 @@ public class XmlFilePropertiesViewer extends Dialog {
        fproperties.setLayout(XmlManagerUtils.createGridLayout(1, 0, 0));
        fproperties.setLayoutData(new GridData(SWT.BEGINNING, SWT.BEGINNING, true, false));
 
-       File xmlFile = (File) root.getUserData(XmlManagerStrings.fileKey);
        String nodeName = root.getNodeName();
-
        switch(nodeName) {
        case TmfXmlUiStrings.TIME_GRAPH_VIEW:
-           Composite associateFileComp = new Composite(fproperties, SWT.NONE);
-           associateFileComp.setLayout(XmlManagerUtils.createGridLayout(1, 5, 5));
-           associateFileComp.setLayoutData(new GridData(SWT.BEGINNING, SWT.BEGINNING, true, false));
-
-           Label associateFile = new Label(associateFileComp, SWT.NONE);
-           associateFile.setText("File: " + xmlFile.getName()); //$NON-NLS-1$
-
            Composite IDComposite = new Composite(fproperties, SWT.NONE);
            IDComposite.setLayout(XmlManagerUtils.createGridLayout(1, 5, 5));
            IDComposite.setLayoutData(new GridData(SWT.BEGINNING, SWT.BEGINNING, true, false));
@@ -256,7 +280,7 @@ public class XmlFilePropertiesViewer extends Dialog {
            IDValueComposite.setLayoutData(new GridData(SWT.BEGINNING, SWT.BEGINNING, true, false));
 
            Text IDValue = new Text(IDValueComposite, SWT.BORDER);
-           IDValue.setLayoutData(new GridData(300, 40));
+           IDValue.setLayoutData(new GridData(350, 40));
            final String initialTitle = root.getAttributes().getNamedItem(TmfXmlStrings.ID).getNodeValue();
            IDValue.setText(initialTitle);
            IDValue.setData(XmlManagerStrings.nodeKey, root);
@@ -266,7 +290,7 @@ public class XmlFilePropertiesViewer extends Dialog {
                 @Override
                 public void run() {
                     try {
-                        XmlUtils.setNewAttribute(fxmlFile, XmlUtils.getOriginalXmlFile(fxmlFile), root,
+                        XmlUtils.setNewAttribute(fxmlFile, root,
                                 TmfXmlStrings.ID, initialTitle);
                     } catch (ParserConfigurationException | SAXException | IOException | TransformerException e) {
                         e.printStackTrace();
@@ -286,13 +310,6 @@ public class XmlFilePropertiesViewer extends Dialog {
            resetText.addSelectionListener(XmlManagerListeners.resetTextSL(IDValue, initialTitle, root));
            break;
        case TmfXmlUiStrings.XY_VIEW:
-           Composite associateFileComp2 = new Composite(fproperties, SWT.NONE);
-           associateFileComp2.setLayout(XmlManagerUtils.createGridLayout(1, 5, 5));
-           associateFileComp2.setLayoutData(new GridData(SWT.BEGINNING, SWT.BEGINNING, true, false));
-
-           Label associateFile2 = new Label(associateFileComp2, SWT.NONE);
-           associateFile2.setText("File: " + xmlFile.getName()); //$NON-NLS-1$
-
            Composite IDComposite2 = new Composite(fproperties, SWT.NONE);
            IDComposite2.setLayout(XmlManagerUtils.createGridLayout(1, 5, 5));
            IDComposite2.setLayoutData(new GridData(SWT.BEGINNING, SWT.BEGINNING, true, false));
@@ -305,7 +322,7 @@ public class XmlFilePropertiesViewer extends Dialog {
            IDValueComposite2.setLayoutData(new GridData(SWT.BEGINNING, SWT.BEGINNING, true, false));
 
            Text IDValue2 = new Text(IDValueComposite2, SWT.BORDER);
-           IDValue2.setLayoutData(new GridData(300, 40));
+           IDValue2.setLayoutData(new GridData(350, 40));
            final String initialTitle2 = root.getAttributes().getNamedItem(TmfXmlStrings.ID).getNodeValue();
            IDValue2.setText(initialTitle2);
            IDValue2.setData(XmlManagerStrings.nodeKey, root);
@@ -315,7 +332,7 @@ public class XmlFilePropertiesViewer extends Dialog {
                @Override
                public void run() {
                    try {
-                       XmlUtils.setNewAttribute(fxmlFile, XmlUtils.getOriginalXmlFile(fxmlFile), root,
+                       XmlUtils.setNewAttribute(fxmlFile, root,
                                TmfXmlStrings.ID, initialTitle2);
                    } catch (ParserConfigurationException | SAXException | IOException | TransformerException e) {
                        e.printStackTrace();
@@ -370,199 +387,201 @@ public class XmlFilePropertiesViewer extends Dialog {
    public static void fillCompositeWithRootChildren(final Node root, final Node child) {
        String nodeName = child.getNodeName();
 
-       switch(nodeName) {
-       case TmfXmlUiStrings.ENTRY_ELEMENT:
-           Label entryTitle = new Label(fproperties, SWT.NONE);
-           entryTitle.setText("Shown information:"); //$NON-NLS-1$
+       if(!root.getNodeName().equals(TmfXmlStrings.STATE_PROVIDER)) {
+        switch(nodeName) {
+           case TmfXmlUiStrings.ENTRY_ELEMENT:
+               Label entryTitle = new Label(fproperties, SWT.NONE);
+               entryTitle.setText("Shown information:"); //$NON-NLS-1$
 
-           FontData fontData3 = entryTitle.getFont().getFontData()[0];
-           Font font3 = new Font(fproperties.getDisplay(), new FontData(fontData3.getName(), fontData3
-                   .getHeight(), SWT.BOLD));
-           entryTitle.setFont(font3);
-
-           Composite currentPathComposite = new Composite(fproperties, SWT.NONE);
-           currentPathComposite.setLayout(XmlManagerUtils.createGridLayout(3, 5, 5));
-
-           Label currentPath = new Label(currentPathComposite, SWT.NONE);
-           currentPath.setText("Current entry path: "); //$NON-NLS-1$
-
-           Label currentPathValue = new Label(currentPathComposite, SWT.BORDER);
-           final String initialValue = child.getAttributes().getNamedItem(TmfXmlUiStrings.PATH).getNodeValue();
-           currentPathValue.setText(initialValue);
-           currentPathValue.setLayoutData(new GridData(200, 20));
-           originalValuesOfModifs.put(currentPathValue.hashCode(), new Runnable() {
-
-               @Override
-               public void run() {
-                   try {
-                       XmlUtils.setNewAttribute(fxmlFile, XmlUtils.getOriginalXmlFile(fxmlFile), child,
-                               TmfXmlUiStrings.PATH, initialValue);
-                   } catch (ParserConfigurationException | SAXException | IOException | TransformerException e) {
-                       e.printStackTrace();
-                       return;
-                   }
-               }
-           });
-
-           Button buildPath = new Button(currentPathComposite, SWT.PUSH);
-           buildPath.setText("Build path"); //$NON-NLS-1$
-
-           buildPath.addSelectionListener(XmlManagerListeners.buildPathSL(fproperties, currentPathValue, root));
-
-           createEntryTable(root, child);
-           break;
-       case TmfXmlStrings.HEAD:
-           break;
-       case TmfXmlStrings.TRACETYPE:
-           break;
-       case TmfXmlStrings.ID:
-           break;
-       case TmfXmlStrings.LABEL:
-           Composite labelComposite = new Composite(fproperties, SWT.NONE);
-           labelComposite.setLayout(XmlManagerUtils.createGridLayout(1, 5, 5));
-           labelComposite.setLayoutData(new GridData(SWT.BEGINNING, SWT.BEGINNING, false, false));
-
-           Label graphTitle = new Label(labelComposite, SWT.NONE);
-           graphTitle.setText("Graph title: "); //$NON-NLS-1$
-
-           Composite textComposite = new Composite(fproperties, SWT.NONE);
-           textComposite.setLayout(XmlManagerUtils.createGridLayout(1, 15, 5));
-           textComposite.setLayoutData(new GridData(SWT.BEGINNING, SWT.BEGINNING, false, false));
-
-           final Text text = new Text(textComposite, SWT.BORDER);
-           final String initialTitle = child.getAttributes().getNamedItem(TmfXmlStrings.VALUE).getNodeValue();
-           text.setLayoutData(new GridData(300, 40));
-           text.setText(initialTitle);
-           text.setData(XmlManagerStrings.nodeKey, child);
-           text.addModifyListener(XmlManagerListeners.textML(text, initialTitle, root, TmfXmlStrings.VALUE));
-           XmlManagerUtils.addBasicMenuToText(text);
-           originalValuesOfModifs.put(text.hashCode(), new Runnable() {
-
-               @Override
-               public void run() {
-                   try {
-                       XmlUtils.setNewAttribute(fxmlFile, XmlUtils.getOriginalXmlFile(fxmlFile), child,
-                               TmfXmlStrings.VALUE, initialTitle);
-                   } catch (ParserConfigurationException | SAXException | IOException | TransformerException e) {
-                       e.printStackTrace();
-                       return;
-                   }
-               }
-           });
-
-           @SuppressWarnings("unused")
-           MenuItem separator = new MenuItem(text.getMenu(), SWT.SEPARATOR);
-
-           MenuItem resetText = new MenuItem(text.getMenu(), SWT.NONE);
-           resetText.setText("Reset");
-           resetText.setData(XmlManagerStrings.nodeKey, child);
-           resetText.addSelectionListener(XmlManagerListeners.resetTextSL(text, initialTitle, root));
-           break;
-       case TmfXmlStrings.ANALYSIS:
-           Composite analysisIDComposite = new Composite(fproperties, SWT.NONE);
-           analysisIDComposite.setLayout(XmlManagerUtils.createGridLayout(1, 5, 5));
-           analysisIDComposite.setLayoutData(new GridData(SWT.BEGINNING, SWT.BEGINNING, false, false));
-
-           Label analysisID = new Label(analysisIDComposite, SWT.NONE);
-           analysisID.setText("Analysis ID: ");  //$NON-NLS-1$
-
-           Composite analysisIDValueComposite = new Composite(fproperties, SWT.NONE);
-           analysisIDValueComposite.setLayout(XmlManagerUtils.createGridLayout(1, 15, 5));
-           analysisIDValueComposite.setLayoutData(new GridData(SWT.BEGINNING, SWT.BEGINNING, false, false));
-
-           Text analysisIDValue = new Text(analysisIDValueComposite, SWT.BORDER);
-           analysisIDValue.setLayoutData(new GridData(300, 40));
-           final String initialTitle2 = child.getAttributes().getNamedItem(TmfXmlStrings.ID).getNodeValue();
-           analysisIDValue.setText(initialTitle2);
-           analysisIDValue.setData(XmlManagerStrings.nodeKey, child);
-           analysisIDValue.addModifyListener(XmlManagerListeners.textML(analysisIDValue, initialTitle2, root, TmfXmlStrings.ID));
-           originalValuesOfModifs.put(analysisIDValue.hashCode(), new Runnable() {
-
-               @Override
-               public void run() {
-                   try {
-                       XmlUtils.setNewAttribute(fxmlFile, XmlUtils.getOriginalXmlFile(fxmlFile), child,
-                               TmfXmlStrings.VALUE, initialTitle2);
-                   } catch (ParserConfigurationException | SAXException | IOException | TransformerException e) {
-                       e.printStackTrace();
-                       return;
-                   }
-               }
-           });
-
-           XmlManagerUtils.addBasicMenuToText(analysisIDValue);
-
-           @SuppressWarnings("unused")
-           MenuItem separator2 = new MenuItem(analysisIDValue.getMenu(), SWT.SEPARATOR);
-
-           MenuItem resetText2 = new MenuItem(analysisIDValue.getMenu(), SWT.NONE);
-           resetText2.setText("Reset");
-           resetText2.setData(XmlManagerStrings.nodeKey, root);
-           resetText2.addSelectionListener(XmlManagerListeners.resetTextSL(analysisIDValue, initialTitle2, root));
-           break;
-       case TmfXmlStrings.DEFINED_VALUE:
-           if(createAnotherTable) {
-               Label processStatusTitle = new Label(fproperties, SWT.NONE);
-               processStatusTitle.setText("Process Status Colors:"); //$NON-NLS-1$
-
-               FontData fontData2 = processStatusTitle.getFont().getFontData()[0];
-               Font font2 = new Font(fproperties.getDisplay(), new FontData(fontData2.getName(), fontData2
+               FontData fontData3 = entryTitle.getFont().getFontData()[0];
+               Font font3 = new Font(fproperties.getDisplay(), new FontData(fontData3.getName(), fontData3
                        .getHeight(), SWT.BOLD));
-               processStatusTitle.setFont(font2);
+               entryTitle.setFont(font3);
 
-               Composite definedValueTableComposite = new Composite(fproperties, SWT.NONE);
-               definedValueTableComposite.setLayout(XmlManagerUtils.createGridLayout(1, 15, 5));
-               definedValueTableComposite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+               Composite currentPathComposite = new Composite(fproperties, SWT.NONE);
+               currentPathComposite.setLayout(XmlManagerUtils.createGridLayout(3, 5, 5));
 
-               Table definedValueTable = new Table(definedValueTableComposite, SWT.SINGLE | SWT.BORDER);
-               definedValueTable.setLinesVisible(true);
-               definedValueTable.setHeaderVisible(true);
-               definedValueTable.setLayout(new TableLayout());
-               definedValueTable.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true));
+               Label currentPath = new Label(currentPathComposite, SWT.NONE);
+               currentPath.setText("Current entry path: "); //$NON-NLS-1$
 
-               TableColumn nameColumn = new TableColumn(definedValueTable, SWT.NONE);
-               nameColumn.setText(TmfXmlStrings.NAME);
-               nameColumn.setWidth(300);
-               nameColumn.setResizable(true);
+               Label currentPathValue = new Label(currentPathComposite, SWT.BORDER);
+               final String initialValue = child.getAttributes().getNamedItem(TmfXmlUiStrings.PATH).getNodeValue();
+               currentPathValue.setText(initialValue);
+               currentPathValue.setLayoutData(new GridData(200, 20));
+               originalValuesOfModifs.put(currentPathValue.hashCode(), new Runnable() {
 
-               TableColumn colorColumn = new TableColumn(definedValueTable, SWT.NONE);
-               colorColumn.setText(TmfXmlStrings.COLOR);
-               colorColumn.setWidth(100);
-               colorColumn.setResizable(true);
+                   @Override
+                   public void run() {
+                       try {
+                           XmlUtils.setNewAttribute(fxmlFile, child,
+                                   TmfXmlUiStrings.PATH, initialValue);
+                       } catch (ParserConfigurationException | SAXException | IOException | TransformerException e) {
+                           e.printStackTrace();
+                           return;
+                       }
+                   }
+               });
 
-               createDefinedValueTableEditor(definedValueTable, root);
-               currentTable[0] = definedValueTable;
-               createAnotherTable = false;
+               Button buildPath = new Button(currentPathComposite, SWT.PUSH);
+               buildPath.setText("Build path"); //$NON-NLS-1$
+
+               buildPath.addSelectionListener(XmlManagerListeners.buildPathSL(fproperties, currentPathValue, root));
+
+               createEntryTable(root, child);
+               break;
+           case TmfXmlStrings.HEAD:
+               break;
+           case TmfXmlStrings.TRACETYPE:
+               break;
+           case TmfXmlStrings.ID:
+               break;
+           case TmfXmlStrings.LABEL:
+               Composite labelComposite = new Composite(fproperties, SWT.NONE);
+               labelComposite.setLayout(XmlManagerUtils.createGridLayout(1, 5, 5));
+               labelComposite.setLayoutData(new GridData(SWT.BEGINNING, SWT.BEGINNING, false, false));
+
+               Label graphTitle = new Label(labelComposite, SWT.NONE);
+               graphTitle.setText("Graph title: "); //$NON-NLS-1$
+
+               Composite textComposite = new Composite(fproperties, SWT.NONE);
+               textComposite.setLayout(XmlManagerUtils.createGridLayout(1, 15, 5));
+               textComposite.setLayoutData(new GridData(SWT.BEGINNING, SWT.BEGINNING, false, false));
+
+               final Text text = new Text(textComposite, SWT.BORDER);
+               final String initialTitle = child.getAttributes().getNamedItem(TmfXmlStrings.VALUE).getNodeValue();
+               text.setLayoutData(new GridData(350, 40));
+               text.setText(initialTitle);
+               text.setData(XmlManagerStrings.nodeKey, child);
+               text.addModifyListener(XmlManagerListeners.textML(text, initialTitle, root, TmfXmlStrings.VALUE));
+               XmlManagerUtils.addBasicMenuToText(text);
+               originalValuesOfModifs.put(text.hashCode(), new Runnable() {
+
+                   @Override
+                   public void run() {
+                       try {
+                           XmlUtils.setNewAttribute(fxmlFile, child,
+                                   TmfXmlStrings.VALUE, initialTitle);
+                       } catch (ParserConfigurationException | SAXException | IOException | TransformerException e) {
+                           e.printStackTrace();
+                           return;
+                       }
+                   }
+               });
+
+               @SuppressWarnings("unused")
+               MenuItem separator = new MenuItem(text.getMenu(), SWT.SEPARATOR);
+
+               MenuItem resetText = new MenuItem(text.getMenu(), SWT.NONE);
+               resetText.setText("Reset");
+               resetText.setData(XmlManagerStrings.nodeKey, child);
+               resetText.addSelectionListener(XmlManagerListeners.resetTextSL(text, initialTitle, root));
+               break;
+           case TmfXmlStrings.ANALYSIS:
+               Composite analysisIDComposite = new Composite(fproperties, SWT.NONE);
+               analysisIDComposite.setLayout(XmlManagerUtils.createGridLayout(1, 5, 5));
+               analysisIDComposite.setLayoutData(new GridData(SWT.BEGINNING, SWT.BEGINNING, false, false));
+
+               Label analysisID = new Label(analysisIDComposite, SWT.NONE);
+               analysisID.setText("Analysis ID: ");  //$NON-NLS-1$
+
+               Composite analysisIDValueComposite = new Composite(fproperties, SWT.NONE);
+               analysisIDValueComposite.setLayout(XmlManagerUtils.createGridLayout(1, 15, 5));
+               analysisIDValueComposite.setLayoutData(new GridData(SWT.BEGINNING, SWT.BEGINNING, false, false));
+
+               Text analysisIDValue = new Text(analysisIDValueComposite, SWT.BORDER);
+               analysisIDValue.setLayoutData(new GridData(350, 40));
+               final String initialTitle2 = child.getAttributes().getNamedItem(TmfXmlStrings.ID).getNodeValue();
+               analysisIDValue.setText(initialTitle2);
+               analysisIDValue.setData(XmlManagerStrings.nodeKey, child);
+               analysisIDValue.addModifyListener(XmlManagerListeners.textML(analysisIDValue, initialTitle2, root, TmfXmlStrings.ID));
+               originalValuesOfModifs.put(analysisIDValue.hashCode(), new Runnable() {
+
+                   @Override
+                   public void run() {
+                       try {
+                           XmlUtils.setNewAttribute(fxmlFile, child,
+                                   TmfXmlStrings.VALUE, initialTitle2);
+                       } catch (ParserConfigurationException | SAXException | IOException | TransformerException e) {
+                           e.printStackTrace();
+                           return;
+                       }
+                   }
+               });
+
+               XmlManagerUtils.addBasicMenuToText(analysisIDValue);
+
+               @SuppressWarnings("unused")
+               MenuItem separator2 = new MenuItem(analysisIDValue.getMenu(), SWT.SEPARATOR);
+
+               MenuItem resetText2 = new MenuItem(analysisIDValue.getMenu(), SWT.NONE);
+               resetText2.setText("Reset");
+               resetText2.setData(XmlManagerStrings.nodeKey, root);
+               resetText2.addSelectionListener(XmlManagerListeners.resetTextSL(analysisIDValue, initialTitle2, root));
+               break;
+           case TmfXmlStrings.DEFINED_VALUE:
+               if(createAnotherTable) {
+                   Label processStatusTitle = new Label(fproperties, SWT.NONE);
+                   processStatusTitle.setText("Process Status Colors:"); //$NON-NLS-1$
+
+                   FontData fontData2 = processStatusTitle.getFont().getFontData()[0];
+                   Font font2 = new Font(fproperties.getDisplay(), new FontData(fontData2.getName(), fontData2
+                           .getHeight(), SWT.BOLD));
+                   processStatusTitle.setFont(font2);
+
+                   Composite definedValueTableComposite = new Composite(fproperties, SWT.NONE);
+                   definedValueTableComposite.setLayout(XmlManagerUtils.createGridLayout(1, 15, 5));
+                   definedValueTableComposite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+
+                   Table definedValueTable = new Table(definedValueTableComposite, SWT.SINGLE | SWT.BORDER);
+                   definedValueTable.setLinesVisible(true);
+                   definedValueTable.setHeaderVisible(true);
+                   definedValueTable.setLayout(new TableLayout());
+                   definedValueTable.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true));
+
+                   TableColumn nameColumn = new TableColumn(definedValueTable, SWT.NONE);
+                   nameColumn.setText(TmfXmlStrings.NAME);
+                   nameColumn.setWidth(300);
+                   nameColumn.setResizable(true);
+
+                   TableColumn colorColumn = new TableColumn(definedValueTable, SWT.NONE);
+                   colorColumn.setText(TmfXmlStrings.COLOR);
+                   colorColumn.setWidth(100);
+                   colorColumn.setResizable(true);
+
+                   createDefinedValueTableEditor(definedValueTable, root);
+                   currentTable[0] = definedValueTable;
+                   createAnotherTable = false;
+               }
+
+               if(currentTable[0] != null) {
+                   addRowDefinedValueTable(currentTable[0], child);
+                   currentTable[0].setSize(currentTable[0].computeSize(SWT.DEFAULT, SWT.DEFAULT));
+               }
+
+               break;
+           case TmfXmlStrings.LOCATION:
+               break;
+           case TmfXmlStrings.EVENT_HANDLER:
+               break;
+           case TmfXmlStrings.STATE_ATTRIBUTE:
+               break;
+           case TmfXmlStrings.STATE_VALUE:
+               break;
+           case TmfXmlStrings.STATE_CHANGE:
+               break;
+           case TmfXmlStrings.ELEMENT_FIELD:
+               break;
+           case TmfXmlStrings.HANDLER_EVENT_NAME:
+               break;
+           default:
+               break;
            }
 
-           if(currentTable[0] != null) {
-               addRowDefinedValueTable(currentTable[0], child);
-               currentTable[0].setSize(currentTable[0].computeSize(SWT.DEFAULT, SWT.DEFAULT));
-           }
-
-           break;
-       case TmfXmlStrings.LOCATION:
-           break;
-       case TmfXmlStrings.EVENT_HANDLER:
-           break;
-       case TmfXmlStrings.STATE_ATTRIBUTE:
-           break;
-       case TmfXmlStrings.STATE_VALUE:
-           break;
-       case TmfXmlStrings.STATE_CHANGE:
-           break;
-       case TmfXmlStrings.ELEMENT_FIELD:
-           break;
-       case TmfXmlStrings.HANDLER_EVENT_NAME:
-           break;
-       default:
-           break;
-       }
-
-       NodeList childChildren = child.getChildNodes();
-       for(int i = 0; i < childChildren.getLength(); i++) {
-           fillCompositeWithRootChildren(root, childChildren.item(i));
-       }
+        NodeList childChildren = child.getChildNodes();
+        for(int i = 0; i < childChildren.getLength(); i++) {
+            fillCompositeWithRootChildren(root, childChildren.item(i));
+        }
+    }
    }
 
    private static void createDefinedValueTableEditor(Table definedValueTable, Node root) {
@@ -598,10 +617,10 @@ public class XmlFilePropertiesViewer extends Dialog {
            @Override
            public void run() {
                try {
-                   XmlUtils.setNewAttribute(fxmlFile, XmlUtils.getOriginalXmlFile(fxmlFile), child,
+                   XmlUtils.setNewAttribute(fxmlFile, child,
                            TmfXmlStrings.VALUE, initialValue);
                    if(colorNode != null) {
-                    XmlUtils.setNewAttribute(fxmlFile, XmlUtils.getOriginalXmlFile(fxmlFile), child,
+                    XmlUtils.setNewAttribute(fxmlFile, child,
                                TmfXmlStrings.COLOR, colorNode.getNodeValue());
                 }
                } catch (ParserConfigurationException | SAXException | IOException | TransformerException e) {
@@ -708,7 +727,7 @@ private static void createEntryTable(final Node root, final Node entry) {
                         File copyFile = (File) root.getUserData(XmlManagerStrings.fileKey);
                         for(int k = 0; k < attNameAndValue.size(); k++) {
                             try {
-                                XmlUtils.setNewAttribute(copyFile, XmlUtils.getOriginalXmlFile(copyFile), entryChildren.item(currentIndex),
+                                XmlUtils.setNewAttribute(copyFile, entryChildren.item(currentIndex),
                                         attNameAndValue.get(k).getFirst(), attNameAndValue.get(k).getSecond());
                             } catch (ParserConfigurationException | SAXException | IOException | TransformerException e) {
                                 e.printStackTrace();
@@ -788,7 +807,7 @@ private static void createEntryTable(final Node root, final Node entry) {
                                                         Node entryChild = (Node) item.getData(XmlManagerStrings.nodeKey);
                                                         File copyFile = (File) root.getUserData(XmlManagerStrings.fileKey);
 
-                                                        XmlUtils.setNewAttribute(copyFile, XmlUtils.getOriginalXmlFile(copyFile), entryChild,
+                                                        XmlUtils.setNewAttribute(copyFile, entryChild,
                                                                 null, newText);
                                                     } catch (ParserConfigurationException | SAXException | IOException | TransformerException e1) {
                                                         e1.printStackTrace();
@@ -844,7 +863,7 @@ private static void createEntryTable(final Node root, final Node entry) {
                                                         Node entryChild = (Node) item.getData(XmlManagerStrings.nodeKey);
                                                         File copyFile = (File) root.getUserData(XmlManagerStrings.fileKey);
 
-                                                        XmlUtils.setNewAttribute(copyFile, XmlUtils.getOriginalXmlFile(copyFile), entryChild,
+                                                        XmlUtils.setNewAttribute(copyFile, entryChild,
                                                                 entryAttributeTable.getColumn(column).getText(), newText);
                                                     } catch (ParserConfigurationException | SAXException | IOException | TransformerException e1) {
                                                         e1.printStackTrace();
@@ -902,11 +921,11 @@ private static void createEntryTable(final Node root, final Node entry) {
                                                 @Override
                                                 public void run() {
                                                     try {
-                                                        String newText = types.getText();
+                                                        String newText = item.getText(column);
                                                         Node entryChild = (Node) item.getData(XmlManagerStrings.nodeKey);
                                                         File copyFile = (File) root.getUserData(XmlManagerStrings.fileKey);
 
-                                                        XmlUtils.setNewAttribute(copyFile, XmlUtils.getOriginalXmlFile(copyFile), entryChild,
+                                                        XmlUtils.setNewAttribute(copyFile, entryChild,
                                                                 entryAttributeTable.getColumn(column).getText(), newText);
                                                     } catch (ParserConfigurationException | SAXException | IOException | TransformerException e1) {
                                                         e1.printStackTrace();
@@ -1000,15 +1019,20 @@ private static void createEntryTable(final Node root, final Node entry) {
      */
     public static void clearModifs() {
         unappliedModif.clear();
-        saveChanges.setEnabled(false);
+        if(!saveChanges.isDisposed()) {
+            saveChanges.setEnabled(false);
+        }
     }
 
     /**
      *
      */
     public static void restoreDefaults() {
-        for(Runnable method : originalValuesOfModifs.values()) {
-            method.run();
+        try {
+            Files.copy(foriginalXmlFile.toPath(), fxmlFile.toPath(), REPLACE_EXISTING);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
         }
 
         TreeItem[] items = ftree.getItems();
@@ -1016,7 +1040,17 @@ private static void createEntryTable(final Node root, final Node entry) {
             items[i].dispose();
         }
 
-        for(Node root : initialValues) {
+        TmfXmlManagerParser parser = null;
+        try {
+            parser = new TmfXmlManagerParser(fxmlFile.getPath());
+        } catch (ParserConfigurationException | SAXException | IOException e) {
+            e.printStackTrace();
+            return;
+        }
+        List<Node> roots = parser.getRoots();
+        for(Node root : roots) {
+            root.setUserData(XmlManagerStrings.fileKey, fxmlFile, null);
+            initialValues.add(root);
             TreeItem item = new TreeItem(ftree, SWT.NONE);
             item.setText(root.getNodeName());
             item.setData(XmlManagerStrings.nodeKey, root);

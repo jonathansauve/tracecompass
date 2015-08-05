@@ -21,6 +21,7 @@ import javax.xml.transform.TransformerException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.dialogs.ErrorDialog;
+import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
@@ -310,6 +311,7 @@ public class XmlManagerListeners {
                 if(selection.length != 0) {
                     XmlFilePropertiesViewer pv = new XmlFilePropertiesViewer(parent.getShell(), (File)selection[0].getData(XmlManagerStrings.fileKey));
                     pv.open();
+                    XmlManagerViewer2.update();
                 }
             }
 
@@ -413,7 +415,7 @@ public class XmlManagerListeners {
                             @Override
                             public void run() {
                                 try {
-                                    XmlUtils.setNewAttribute(xmlFile, XmlUtils.getOriginalXmlFile(xmlFile), oldNode, TmfXmlUiStrings.PATH, path.getBuildPath());
+                                    XmlUtils.setNewAttribute(xmlFile, oldNode, TmfXmlUiStrings.PATH, path.getBuildPath());
                                 } catch (ParserConfigurationException | SAXException | IOException | TransformerException error) {
                                     error.printStackTrace();
                                     return;
@@ -461,7 +463,7 @@ public class XmlManagerListeners {
                         @Override
                         public void run() {
                             try {
-                                XmlUtils.setNewAttribute(xmlFile, XmlUtils.getOriginalXmlFile(xmlFile), oldNode, TmfXmlStrings.VALUE, text.getText());
+                                XmlUtils.setNewAttribute(xmlFile, oldNode, TmfXmlStrings.VALUE, text.getText());
                             } catch (ParserConfigurationException | SAXException | IOException | TransformerException e1) {
                                 e1.printStackTrace();
                             }
@@ -502,7 +504,7 @@ public class XmlManagerListeners {
                         @Override
                         public void run() {
                             try {
-                                XmlUtils.setNewAttribute(xmlFile, XmlUtils.getOriginalXmlFile(xmlFile), oldNode, attributeType, text.getText());
+                                XmlUtils.setNewAttribute(xmlFile, oldNode, attributeType, text.getText());
                             } catch (ParserConfigurationException e1) {
                                 e1.printStackTrace();
                             } catch (SAXException e1) {
@@ -621,10 +623,10 @@ public class XmlManagerListeners {
                     public void run() {
                         try {
                             File copyFile = (File) root.getUserData(XmlManagerStrings.fileKey);
-                            XmlUtils.setNewAttribute(copyFile, XmlUtils.getOriginalXmlFile(copyFile), child, TmfXmlStrings.NAME,
+                            XmlUtils.setNewAttribute(copyFile, child, TmfXmlStrings.NAME,
                                     item.getText(0));
                             RGB color = item.getBackground(1).getRGB();
-                            XmlUtils.setNewAttribute(copyFile, XmlUtils.getOriginalXmlFile(copyFile), child, TmfXmlStrings.COLOR,
+                            XmlUtils.setNewAttribute(copyFile, child, TmfXmlStrings.COLOR,
                                     XmlManagerUtils.rgbToHexa(color.red, color.green, color.blue));
                         } catch (ParserConfigurationException | SAXException | IOException | TransformerException e1) {
                             e1.printStackTrace();
@@ -639,52 +641,65 @@ public class XmlManagerListeners {
     /**
      * @param shell
      *              The shell that triggers the action
+     * @param buttonPressed
+     *              The button being pressed : one between
+     *              {@link IDialogConstants#OK_ID} or
+     *              {@link IDialogConstants#CANCEL_ID}
      * @return
      *              The new selection listener
      */
-    public static Listener closeShellSL(final Shell shell) {
+    public static Listener closeShellSL(final Shell shell, final int buttonPressed) {
         return new Listener() {
 
             @Override
             public void handleEvent(Event event) {
-                int returnCode = 0;
                 if(XmlFilePropertiesViewer.modifsInStandby()) {
-                    MessageDialog dialog = new MessageDialog(Display.getDefault().getActiveShell(),
-                            "Unsaved changes", null, "The changes have not been apply. What do you want to do?",
-                            MessageDialog.QUESTION, new String[] {"Close without saving", "Cancel", "Save and close"}, 0);
-                            returnCode = dialog.open();
-                            System.out.println(returnCode);
+                    if(buttonPressed == IDialogConstants.OK_ID) {
+                        MessageDialog dialog = new MessageDialog(Display.getDefault().getActiveShell(),
+                                "Closing Window", null, "The changes have not been apply. What do you want to do?",
+                                MessageDialog.QUESTION, new String[] {"Close without saving", "Cancel", "Save and close"}, 0);
+                        int returnCode = dialog.open();
+                        switch(returnCode) {
+                        // close without saving
+                        case 0:
+                            XmlFilePropertiesViewer.clearModifs();
+                            shell.close();
+                            break;
+                        //cancel
+                        case 1:
+                            // do nothing
+                            break;
+                        // save and close
+                        case 2:
+                            XmlFilePropertiesViewer.applyAllModifs();
+                            shell.close();
+                            break;
+                        // same as cancel
+                        default:
+                            // do nothing
+                            break;
+                        }
+                    } else if(buttonPressed == IDialogConstants.CANCEL_ID) {
+                        MessageDialog dialog = new MessageDialog(Display.getDefault().getActiveShell(), "Closing Window", null,
+                                "There are unsaved changed. Are you sure you want to close?", MessageDialog.QUESTION,
+                                new String[] {"Yes", "No"}, 0);
+                        int returnCode = dialog.open();
+                        switch(returnCode) {
+                        // yes
+                        case 0:
+                            XmlFilePropertiesViewer.clearModifs();
+                            shell.close();
+                            break;
+                        // no
+                        default:
+                            break;
+                        }
+                    }
+                } else {
+                    if(!shell.isDisposed()) {
+                        shell.close();
+                    }
                 }
-                switch(returnCode) {
-                // close without saving
-                case 0:
-                    XmlFilePropertiesViewer.clearModifs();
-                    shell.close();
-                    break;
-                //cancel
-                case 1:
-                    // do nothing
-                    break;
-                // save and close
-                case 2:
-                    XmlFilePropertiesViewer.applyAllModifs();
-                    shell.close();
-                    break;
-                // same as cancel
-                default:
-                    // do nothing
-                    break;
-                }
-                /*if(unsavedChanges) {
-                    MessageBox messageBox = new MessageBox(shell, SWT.ICON_QUESTION
-                            | SWT.YES | SWT.NO);
-                    messageBox.setMessage("There's unsaved changed. Do you really want to close?");
-                    messageBox.setText("Closing " + shell.getText());
-                    event.doit = messageBox.open() == SWT.YES;
-                }
-                if(event.doit) {
-                    shell.close();
-                }*/
             }
         };
     }

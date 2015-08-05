@@ -344,8 +344,6 @@ public class XmlUtils {
      *
      * @param copyFile
      *              The file in xml_files folder
-     * @param originalFile
-     *              The original file
      * @param node
      *              The node to set the new value
      * @param attribute
@@ -362,17 +360,12 @@ public class XmlUtils {
      * @since 2.0
      */
     @SuppressWarnings("javadoc")
-    public static IStatus setNewAttribute(File copyFile, File originalFile, Node node, String attribute, String value) throws ParserConfigurationException, SAXException, IOException, TransformerException {
-
-        if(xmlFileIsActive(copyFile) == false) {
-            return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "One or both of these XML file are not valid"); //$NON-NLS-1$
-        }
+    public static IStatus setNewAttribute(File copyFile, Node node, String attribute, String value) throws ParserConfigurationException, SAXException, IOException, TransformerException {
 
         // Parse the files
         DocumentBuilderFactory dbFact = DocumentBuilderFactory.newInstance();
         DocumentBuilder dBuilder = dbFact.newDocumentBuilder();
         Document doc = dBuilder.parse(copyFile);
-        Document originalDoc = dBuilder.parse(originalFile);
 
         // Find the node to be modified
         boolean docChanged = false;
@@ -402,7 +395,7 @@ public class XmlUtils {
             }
         }
 
-        boolean originalDocChanged = false;
+        /*boolean originalDocChanged = false;
         NodeList originalNodes = originalDoc.getElementsByTagName(node.getNodeName());
         for(int i = 0; i < originalNodes.getLength(); i++) {
             Node currentNode = originalNodes.item(i);
@@ -427,7 +420,7 @@ public class XmlUtils {
                 originalDocChanged = true;
                 break;
             }
-        }
+        }*/
 
         // update the files
         if(docChanged) {
@@ -438,13 +431,13 @@ public class XmlUtils {
             transformer.transform(source, result);
         }
 
-        if(originalDocChanged) {
+        /*if(originalDocChanged) {
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
             Transformer transformer = transformerFactory.newTransformer();
             DOMSource source = new DOMSource(originalDoc);
             StreamResult result = new StreamResult(new File(originalFile.getAbsolutePath()));
             transformer.transform(source, result);
-        }
+        }*/
 
         return Status.OK_STATUS;
     }
