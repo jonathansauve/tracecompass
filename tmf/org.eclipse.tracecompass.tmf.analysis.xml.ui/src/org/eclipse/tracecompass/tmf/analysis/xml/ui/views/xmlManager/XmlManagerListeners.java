@@ -80,7 +80,7 @@ public class XmlManagerListeners {
     /** Make this class non-instantiable */
     private XmlManagerListeners(){ }
 
-    /** XmlManagerViewer2 listeners */
+    /** XmlManagerViewer listeners */
 
     /**
      * This listener implements multiple cases for the xmlFilesTree
@@ -311,7 +311,7 @@ public class XmlManagerListeners {
                 if(selection.length != 0) {
                     XmlFilePropertiesViewer pv = new XmlFilePropertiesViewer(parent.getShell(), (File)selection[0].getData(XmlManagerStrings.fileKey));
                     pv.open();
-                    XmlManagerViewer2.update();
+                    XmlManagerViewer.update();
                 }
             }
 
@@ -321,6 +321,11 @@ public class XmlManagerListeners {
     }
 
     /**
+     * This listener is called when the user try to change his selection
+     * in the tree of root elements : one between
+     * {@link TmfXmlUiStrings#TIME_GRAPH_VIEW},
+    *  {@link TmfXmlUiStrings#XY_VIEW} or
+    *  {@link TmfXmlStrings#STATE_PROVIDER}
      * @param tree
      *              The tree that the listener is attach to
      * @return
@@ -383,6 +388,8 @@ public class XmlManagerListeners {
     }
 
     /**
+     * This listener principally open the view {@link StateSystemPathBuilderViewer} to
+     * allow the build of a path
      * @param parent
      *              The parent composite
      * @param currentPathValue
@@ -438,6 +445,7 @@ public class XmlManagerListeners {
     }
 
     /**
+     * This listener reset the <code>Text</code> to its initial value
      * @param text
      *              The text to set the new attribute
      * @param initialTitle
@@ -625,7 +633,7 @@ public class XmlManagerListeners {
                             File copyFile = (File) root.getUserData(XmlManagerStrings.fileKey);
                             XmlUtils.setNewAttribute(copyFile, child, TmfXmlStrings.NAME,
                                     item.getText(0));
-                            RGB color = item.getBackground(1).getRGB();
+                            RGB color = item.getBackground(2).getRGB();
                             XmlUtils.setNewAttribute(copyFile, child, TmfXmlStrings.COLOR,
                                     XmlManagerUtils.rgbToHexa(color.red, color.green, color.blue));
                         } catch (ParserConfigurationException | SAXException | IOException | TransformerException e1) {

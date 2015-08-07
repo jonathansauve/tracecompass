@@ -8,6 +8,7 @@
  *
  * Contributors:
  *   Geneviève Bastien - Initial API and implementation
+ *   Jonathan Sauvé - Adding functionnalities for the XML Manager
  *******************************************************************************/
 
 package org.eclipse.tracecompass.tmf.analysis.xml.core.module;
@@ -183,12 +184,13 @@ public class XmlUtils {
 
         if(valid) {
             xmlFiles.remove(toDelete);
-            toDelete.delete();
-            // FIXME: reverse the dependency here. The XmlAnalysisModuleSource
-            // should register itself as listener of this object. Then, call the
-            // callback method. The listener interface will be in the core
-            // package, and the UI will depends on it.
-            // XmlAnalysisModuleSource.notifyModuleChange();
+            File folder = getXmlFilesPath().toFile();
+            File[] files = folder.listFiles();
+            for(int i = 0; i < files.length; i++) {
+                if(files[i].getName().equals(toDelete.getName())) {
+                    files[i].delete();
+                }
+            }
             return Status.OK_STATUS;
         }
         return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "The XML file is not an active XML Analysis"); //$NON-NLS-1$
@@ -395,33 +397,6 @@ public class XmlUtils {
             }
         }
 
-        /*boolean originalDocChanged = false;
-        NodeList originalNodes = originalDoc.getElementsByTagName(node.getNodeName());
-        for(int i = 0; i < originalNodes.getLength(); i++) {
-            Node currentNode = originalNodes.item(i);
-            if(currentNode.isEqualNode(node)) {
-                if(attribute != null) {
-                    if(currentNode.getAttributes().getNamedItem(attribute) != null) {
-                        currentNode.getAttributes().getNamedItem(attribute).setNodeValue(value);
-                    }
-                } else {
-                    Node parent = currentNode.getParentNode();
-                    // create a new node with the new NodeName value
-                    Element newChild = originalDoc.createElement(value);
-                    // copy all the attributes from the oldNode
-                    NamedNodeMap attributes = currentNode.getAttributes();
-                    for(int j = 0; j < attributes.getLength(); j++) {
-                        Node att = attributes.item(j);
-                        newChild.setAttribute(att.getNodeName(), att.getNodeValue());
-                    }
-                    // replace the node by the new one in the parent
-                    parent.replaceChild(newChild, currentNode);
-                }
-                originalDocChanged = true;
-                break;
-            }
-        }*/
-
         // update the files
         if(docChanged) {
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
@@ -430,14 +405,6 @@ public class XmlUtils {
             StreamResult result = new StreamResult(new File(copyFile.getAbsolutePath()));
             transformer.transform(source, result);
         }
-
-        /*if(originalDocChanged) {
-            TransformerFactory transformerFactory = TransformerFactory.newInstance();
-            Transformer transformer = transformerFactory.newTransformer();
-            DOMSource source = new DOMSource(originalDoc);
-            StreamResult result = new StreamResult(new File(originalFile.getAbsolutePath()));
-            transformer.transform(source, result);
-        }*/
 
         return Status.OK_STATUS;
     }
@@ -727,126 +694,6 @@ public class XmlUtils {
     }
 
     /**
-     * @param oldNode
-     *              The node to be removed
-     * @param parent
-     *              The parent of the oldNode
-     * @param xmlFile
-     *              The file that contains the node
-     * @param applyChanges
-     *              Whether we apply the changes to the file or not
-     * @return
-     *              Whether the element was successfully removed
-     * @since 2.0
-     */
-    public static IStatus removeElementFromFile(Node oldNode, Node parent, File xmlFile, boolean applyChanges) {
-        boolean valid = xmlFileIsActive(xmlFile);
-
-        if(valid) {
-            /**
-             * 1- Get the original file
-             * 2- Parse the files
-             * 3- Find the parent
-             * 4- Delete the node
-             * 5- Save the files
-             */
-            File originalFile = xmlFiles.get(xmlFile);
-            if(originalFile == null) {
-                return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Invalid XML file"); //$NON-NLS-1$
-            }
-
-            DocumentBuilderFactory dbFact = DocumentBuilderFactory.newInstance();
-            DocumentBuilder dBuilder;
-            Document doc;
-            Document originalDoc;
-            try {
-                dBuilder = dbFact.newDocumentBuilder();
-                doc = dBuilder.parse(xmlFile);
-                originalDoc = dBuilder.parse(originalFile);
-            } catch (SAXException e) {
-                e.printStackTrace();
-                return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "SAX error"); //$NON-NLS-1$
-            } catch (IOException e) {
-                e.printStackTrace();
-                return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "IO error"); //$NON-NLS-1$
-            } catch (ParserConfigurationException e) {
-                e.printStackTrace();
-                return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Parsing error"); //$NON-NLS-1$
-            } catch (Throwable e) {
-                e.printStackTrace();
-                return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Unknown error"); //$NON-NLS-1$
-            }
-
-            boolean docChanged = false;
-            NodeList nodes = doc.getElementsByTagName(parent.getNodeName());
-            for(int i = 0; i < nodes.getLength(); i++) {
-                if(nodes.item(i).getNodeName().equals(parent.getNodeName())) {
-                    //remove the node
-                    Node parentNode = nodes.item(i);
-                    NodeList parentChildrenNodes = parentNode.getChildNodes();
-                    boolean found = false;
-                    for(int j = 0; j < parentChildrenNodes.getLength(); j++) {
-                        if(parentChildrenNodes.item(j).isEqualNode(oldNode)) {
-                            found = true;
-                            parentNode.removeChild(parentChildrenNodes.item(j));
-                            docChanged = true;
-                            break;
-                        }
-                    }
-                    if(found) {
-                        break;
-                    }
-                }
-            }
-
-            boolean originalDocChanged = false;
-            NodeList originalNodes = originalDoc.getElementsByTagName(parent.getNodeName());
-            for(int i = 0; i < originalNodes.getLength(); i++) {
-                if(originalNodes.item(i).getNodeName().equals(parent.getNodeName())) {
-                    Node parentNode = originalNodes.item(i);
-                    NodeList parentChildrenNodes = parentNode.getChildNodes();
-                    boolean found = false;
-                    for(int j = 0; j < parentChildrenNodes.getLength(); j++) {
-                        if(parentChildrenNodes.item(j).isEqualNode(oldNode)) {
-                            found = true;
-                            parentNode.removeChild(parentChildrenNodes.item(j));
-                            originalDocChanged = true;
-                            break;
-                        }
-                    }
-                    if(found) {
-                        break;
-                    }
-                }
-            }
-            if(applyChanges) {
-                try {
-                    if(docChanged) {
-                        TransformerFactory transformerFactory = TransformerFactory.newInstance();
-                        Transformer transformer = transformerFactory.newTransformer();
-                        DOMSource source = new DOMSource(doc);
-                        StreamResult result = new StreamResult(new File(xmlFile.getAbsolutePath()));
-                        transformer.transform(source, result);
-                    }
-
-                    if(originalDocChanged) {
-                        TransformerFactory transformerFactory = TransformerFactory.newInstance();
-                        Transformer transformer = transformerFactory.newTransformer();
-                        DOMSource source = new DOMSource(originalDoc);
-                        StreamResult result = new StreamResult(new File(originalFile.getAbsolutePath()));
-                        transformer.transform(source, result);
-                    }
-                } catch(Throwable e) {
-                    e.printStackTrace();
-                    return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "Error when writing in files"); //$NON-NLS-1$
-                }
-            }
-            return Status.OK_STATUS;
-        }
-        return new Status(IStatus.ERROR, Activator.PLUGIN_ID, "The file is not valid"); //$NON-NLS-1$
-    }
-
-    /**
      * @param root The root to count his children
      * @return The number of children + 1 (the root)
      * @since 2.0
@@ -921,14 +768,14 @@ public class XmlUtils {
      *
      */
     public static void clearXmlDirectory() {
-        File file = getXmlFilesPath().toFile();
-        if(file != null) {
-            File[] files = file.listFiles();
+        File folder = getXmlFilesPath().toFile();
+        if(folder != null) {
+            File[] files = folder.listFiles();
             for(int i = 0; i < files.length; i++)
             {
                 files[i].delete();
             }
-            file.delete();
+            folder.delete();
         }
     }
 }

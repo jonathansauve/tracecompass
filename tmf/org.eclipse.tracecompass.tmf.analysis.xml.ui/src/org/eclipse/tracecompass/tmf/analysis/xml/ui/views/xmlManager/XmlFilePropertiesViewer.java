@@ -101,7 +101,6 @@ public class XmlFilePropertiesViewer extends Dialog {
                         private static Button saveChanges;
 
     private static Map<Integer, Runnable> unappliedModif = new HashMap<>();
-    private static Map<Integer, Runnable> originalValuesOfModifs = new HashMap<>();
     private static List<Node> initialValues = new ArrayList<>();
 
     /**
@@ -125,7 +124,6 @@ public class XmlFilePropertiesViewer extends Dialog {
             return;
         }
         unappliedModif.clear();
-        originalValuesOfModifs.clear();
         initialValues.clear();
     }
 
@@ -180,6 +178,9 @@ public class XmlFilePropertiesViewer extends Dialog {
         return super.close();
     }
 
+    /**
+     * Initialize the principal content for this view.
+     */
     private static void createContents() {
         fsash = new SashForm(fparent, SWT.HORIZONTAL | SWT.NONE);
         fsash.setLayout(XmlManagerUtils.createGridLayout(1, 0, 0));
@@ -237,6 +238,7 @@ public class XmlFilePropertiesViewer extends Dialog {
     }
 
     /**
+     * Initialize the filling.
      * @param root
      *              The root node
      */
@@ -257,7 +259,8 @@ public class XmlFilePropertiesViewer extends Dialog {
     }
 
     /**
-    *
+    * Fill the composite with informations from the root. After this,
+    * fill it with the children informations
     * @param root
     *              The root node
     */
@@ -285,19 +288,6 @@ public class XmlFilePropertiesViewer extends Dialog {
            IDValue.setText(initialTitle);
            IDValue.setData(XmlManagerStrings.nodeKey, root);
            IDValue.addModifyListener(XmlManagerListeners.textML(IDValue, initialTitle, root, TmfXmlStrings.ID));
-           originalValuesOfModifs.put(IDValue.hashCode(), new Runnable() {
-
-                @Override
-                public void run() {
-                    try {
-                        XmlUtils.setNewAttribute(fxmlFile, root,
-                                TmfXmlStrings.ID, initialTitle);
-                    } catch (ParserConfigurationException | SAXException | IOException | TransformerException e) {
-                        e.printStackTrace();
-                        return;
-                    }
-                }
-            });
 
            XmlManagerUtils.addBasicMenuToText(IDValue);
 
@@ -327,20 +317,6 @@ public class XmlFilePropertiesViewer extends Dialog {
            IDValue2.setText(initialTitle2);
            IDValue2.setData(XmlManagerStrings.nodeKey, root);
            IDValue2.addModifyListener(XmlManagerListeners.textML(IDValue2, initialTitle2, root, TmfXmlStrings.ID));
-           originalValuesOfModifs.put(IDValue2.hashCode(), new Runnable() {
-
-               @Override
-               public void run() {
-                   try {
-                       XmlUtils.setNewAttribute(fxmlFile, root,
-                               TmfXmlStrings.ID, initialTitle2);
-                   } catch (ParserConfigurationException | SAXException | IOException | TransformerException e) {
-                       e.printStackTrace();
-                       return;
-                   }
-               }
-           });
-
            break;
        case TmfXmlStrings.STATE_PROVIDER:
            break;
@@ -376,6 +352,8 @@ public class XmlFilePropertiesViewer extends Dialog {
    }
 
    /**
+    * This function fills the composite with the children of this root.
+    * This function is recursive
     * @param root
     *              The root of the tree. Three possibilities:
     *              {@link TmfXmlUiStrings#TIME_GRAPH_VIEW},
@@ -408,19 +386,6 @@ public class XmlFilePropertiesViewer extends Dialog {
                final String initialValue = child.getAttributes().getNamedItem(TmfXmlUiStrings.PATH).getNodeValue();
                currentPathValue.setText(initialValue);
                currentPathValue.setLayoutData(new GridData(200, 20));
-               originalValuesOfModifs.put(currentPathValue.hashCode(), new Runnable() {
-
-                   @Override
-                   public void run() {
-                       try {
-                           XmlUtils.setNewAttribute(fxmlFile, child,
-                                   TmfXmlUiStrings.PATH, initialValue);
-                       } catch (ParserConfigurationException | SAXException | IOException | TransformerException e) {
-                           e.printStackTrace();
-                           return;
-                       }
-                   }
-               });
 
                Button buildPath = new Button(currentPathComposite, SWT.PUSH);
                buildPath.setText("Build path"); //$NON-NLS-1$
@@ -454,19 +419,6 @@ public class XmlFilePropertiesViewer extends Dialog {
                text.setData(XmlManagerStrings.nodeKey, child);
                text.addModifyListener(XmlManagerListeners.textML(text, initialTitle, root, TmfXmlStrings.VALUE));
                XmlManagerUtils.addBasicMenuToText(text);
-               originalValuesOfModifs.put(text.hashCode(), new Runnable() {
-
-                   @Override
-                   public void run() {
-                       try {
-                           XmlUtils.setNewAttribute(fxmlFile, child,
-                                   TmfXmlStrings.VALUE, initialTitle);
-                       } catch (ParserConfigurationException | SAXException | IOException | TransformerException e) {
-                           e.printStackTrace();
-                           return;
-                       }
-                   }
-               });
 
                @SuppressWarnings("unused")
                MenuItem separator = new MenuItem(text.getMenu(), SWT.SEPARATOR);
@@ -494,19 +446,6 @@ public class XmlFilePropertiesViewer extends Dialog {
                analysisIDValue.setText(initialTitle2);
                analysisIDValue.setData(XmlManagerStrings.nodeKey, child);
                analysisIDValue.addModifyListener(XmlManagerListeners.textML(analysisIDValue, initialTitle2, root, TmfXmlStrings.ID));
-               originalValuesOfModifs.put(analysisIDValue.hashCode(), new Runnable() {
-
-                   @Override
-                   public void run() {
-                       try {
-                           XmlUtils.setNewAttribute(fxmlFile, child,
-                                   TmfXmlStrings.VALUE, initialTitle2);
-                       } catch (ParserConfigurationException | SAXException | IOException | TransformerException e) {
-                           e.printStackTrace();
-                           return;
-                       }
-                   }
-               });
 
                XmlManagerUtils.addBasicMenuToText(analysisIDValue);
 
@@ -540,8 +479,13 @@ public class XmlFilePropertiesViewer extends Dialog {
 
                    TableColumn nameColumn = new TableColumn(definedValueTable, SWT.NONE);
                    nameColumn.setText(TmfXmlStrings.NAME);
-                   nameColumn.setWidth(300);
+                   nameColumn.setWidth(275);
                    nameColumn.setResizable(true);
+
+                   TableColumn valueColumn = new TableColumn(definedValueTable, SWT.NONE);
+                   valueColumn.setText(TmfXmlStrings.VALUE);
+                   valueColumn.setWidth(60);
+                   valueColumn.setResizable(true);
 
                    TableColumn colorColumn = new TableColumn(definedValueTable, SWT.NONE);
                    colorColumn.setText(TmfXmlStrings.COLOR);
@@ -584,6 +528,16 @@ public class XmlFilePropertiesViewer extends Dialog {
     }
    }
 
+   /**
+    * Create the table editor for this table.
+    * @param definedValueTable
+    *               The table
+    * @param root
+    *               The root node, one between
+    *               {@link TmfXmlStrings#STATE_PROVIDER},
+    *               {@link TmfXmlUiStrings#TIME_GRAPH_VIEW}
+    *               {@link TmfXmlUiStrings#XY_VIEW}
+    */
    private static void createDefinedValueTableEditor(Table definedValueTable, Node root) {
     final TableEditor editor = new TableEditor(definedValueTable);
     editor.horizontalAlignment = SWT.LEFT;
@@ -592,43 +546,28 @@ public class XmlFilePropertiesViewer extends Dialog {
 }
 
 /**
-    *
-    * @param parent
+    * Add a row with the child attribute's values
     * @param definedValueTable
+    *               The Table
     * @param child
+    *               The node
     */
    private static void addRowDefinedValueTable(Table definedValueTable, final Node child) {
        TableItem item = new TableItem(definedValueTable, SWT.NONE);
        item.setData(XmlManagerStrings.nodeKey, child);
-       final String initialValue = child.getAttributes().getNamedItem(TmfXmlStrings.NAME).getNodeValue();
-       item.setText(0, initialValue);
+       final String initialName = child.getAttributes().getNamedItem(TmfXmlStrings.NAME).getNodeValue();
+       item.setText(0, initialName);
+
+       item.setText(1, child.getAttributes().getNamedItem(TmfXmlStrings.VALUE).getNodeValue());
 
        final Node colorNode = child.getAttributes().getNamedItem(TmfXmlStrings.COLOR);
        if(colorNode != null) {
            String stringColor = colorNode.getNodeValue();
            final RGB oldRGB = new RGB(XmlManagerUtils.hexaToRed(stringColor), XmlManagerUtils.hexaToGreen(stringColor),
                    XmlManagerUtils.hexaToBlue(stringColor));
-           item.setBackground(1, new Color(fproperties.getDisplay(), oldRGB));
+           item.setBackground(2, new Color(fproperties.getDisplay(), oldRGB));
        }
-
        definedValueTable.layout(true, true);
-       originalValuesOfModifs.put(item.hashCode(), new Runnable() {
-
-           @Override
-           public void run() {
-               try {
-                   XmlUtils.setNewAttribute(fxmlFile, child,
-                           TmfXmlStrings.VALUE, initialValue);
-                   if(colorNode != null) {
-                    XmlUtils.setNewAttribute(fxmlFile, child,
-                               TmfXmlStrings.COLOR, colorNode.getNodeValue());
-                }
-               } catch (ParserConfigurationException | SAXException | IOException | TransformerException e) {
-                   e.printStackTrace();
-                   return;
-               }
-           }
-       });
 }
 
 /**
@@ -703,7 +642,6 @@ private static void createEntryTable(final Node root, final Node entry) {
        for (int j = 0; j < entryChildren.getLength(); j++) {
            if (!entryChildren.item(j).getNodeName().equals("#text")) { //$NON-NLS-1$
                final List<Pair<String, String>> attNameAndValue = new ArrayList<>();
-               final int currentIndex = j;
                TableItem row = new TableItem(entryAttributeTable, SWT.NONE);
                row.setText(0, entryChildren.item(j).getNodeName());
                row.setData(XmlManagerStrings.nodeKey, entryChildren.item(j));
@@ -719,23 +657,6 @@ private static void createEntryTable(final Node root, final Node entry) {
                        }
                    }
                }
-
-               originalValuesOfModifs.put(row.hashCode(), new Runnable() {
-
-                    @Override
-                    public void run() {
-                        File copyFile = (File) root.getUserData(XmlManagerStrings.fileKey);
-                        for(int k = 0; k < attNameAndValue.size(); k++) {
-                            try {
-                                XmlUtils.setNewAttribute(copyFile, entryChildren.item(currentIndex),
-                                        attNameAndValue.get(k).getFirst(), attNameAndValue.get(k).getSecond());
-                            } catch (ParserConfigurationException | SAXException | IOException | TransformerException e) {
-                                e.printStackTrace();
-                                return;
-                            }
-                        }
-                    }
-                });
            }
        }
 
@@ -963,6 +884,8 @@ private static void createEntryTable(final Node root, final Node entry) {
    }
 
    /**
+    * Add a modification to the map. This function must only be used by this class,
+    * or in a <code>Listener</code> of one of its controls.
      * @param id
      *              The ID associate with this method. In facts, this ID must be
      *              the one of the widget on which the event occured
@@ -1025,7 +948,8 @@ private static void createEntryTable(final Node root, final Node entry) {
     }
 
     /**
-     *
+     *  Restore all the default values by reloading the original XML file
+     *  and replace the content of the temp file
      */
     public static void restoreDefaults() {
         try {

@@ -19,7 +19,11 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
+
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.TransformerException;
 
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -34,6 +38,7 @@ import org.eclipse.tracecompass.tmf.analysis.xml.core.tests.common.TmfXmlTestFil
 import org.junit.After;
 import org.junit.Test;
 import org.w3c.dom.Element;
+import org.xml.sax.SAXException;
 
 /**
  * Tests for the {@link XmlUtils} class
@@ -130,10 +135,11 @@ public class XmlUtilsTest {
     }
 
     /**
-     * test the {@link XmlUtils#addXmlFile(File)} method
+     * test the {@link XmlUtils#addXmlFile(File)} method and
+     * {@link XmlUtils#removeXmlFile(File)}
      */
     @Test
-    public void testXmlAddFile() {
+    public void testXmlAddAndRemoveFile() {
         /* Check the file does not exist */
         IPath xmlPath = XmlUtils.getXmlFilesPath().addTrailingSeparator().append("test_valid.xml");
         File destFile = xmlPath.toFile();
@@ -144,9 +150,21 @@ public class XmlUtilsTest {
         if ((testXmlFile == null) || !testXmlFile.exists()) {
             fail("XML test file does not exist");
         }
-
+        assertNotNull(testXmlFile);
         XmlUtils.addXmlFile(testXmlFile);
         assertTrue(destFile.exists());
+
+        XmlUtils.removeXmlFile(testXmlFile);
+        File[] xmlFiles = XmlUtils.getXmlFilesPath().toFile().listFiles();
+        boolean found = false;
+        for(int i = 0; i < xmlFiles.length; i++) {
+            if(xmlFiles[i].getName().equals(testXmlFile.getName())) {
+                found = true;
+            }
+        }
+        if(found) {
+            fail("XML test file have not been remove");
+        }
     }
 
     private static final @NonNull String ANALYSIS_ID = "kernel.linux.sp";
@@ -208,4 +226,56 @@ public class XmlUtilsTest {
 
     }
 
+    /**
+     * Test the {@link XmlUtils#getAnalysisId(String)} method
+     */
+    @Test
+    public void testGetAnalysisId() {
+
+        File testXmlFile = TmfXmlTestFiles.VALID_FILE.getFile();
+        assertTrue(XmlUtils.getAnalysisId(testXmlFile.getPath()).equals(ANALYSIS_ID));
+
+        testXmlFile = TmfXmlTestFiles.INVALID_FILE.getFile();
+        assertTrue(XmlUtils.getAnalysisId(testXmlFile.getPath()) == null);
+    }
+
+    /**
+     * Test the {@link XmlUtils#setNewAttribute(File, org.w3c.dom.Node, String, String)}
+     */
+    @Test
+    public void testSetNewAttribute() {
+        /* Get the valid file */
+        File testXmlFile = TmfXmlTestFiles.VALID_FILE.getFile();
+        if ((testXmlFile == null) || !testXmlFile.exists()) {
+            fail("XML test file does not exist");
+        }
+        assertNotNull(testXmlFile);
+
+        /* Get a node to do the test*/
+        Element analysis = XmlUtils.getElementInFile(testXmlFile.getAbsolutePath(), TmfXmlStrings.STATE_PROVIDER, ANALYSIS_ID);
+        assertNotNull(analysis);
+
+        assertTrue(analysis.getAttribute(TmfXmlStrings.ID).equals(ANALYSIS_ID));
+
+        /* Change one of its attribute */
+        try {
+            XmlUtils.setNewAttribute(testXmlFile, analysis, TmfXmlStrings.ID, "test");
+        } catch (ParserConfigurationException | SAXException | IOException | TransformerException e) {
+            e.printStackTrace();
+            fail("An exception has been thrown");
+        }
+
+        /* Check if the attribute value has been change */
+        analysis = XmlUtils.getElementInFile(testXmlFile.getAbsolutePath(), TmfXmlStrings.STATE_PROVIDER, "test");
+
+        assertTrue(analysis.getAttribute(TmfXmlStrings.ID).equals("test"));
+
+        /* re-set the old value */
+        try {
+            XmlUtils.setNewAttribute(testXmlFile, analysis, TmfXmlStrings.ID, ANALYSIS_ID);
+        } catch (ParserConfigurationException | SAXException | IOException | TransformerException e) {
+            e.printStackTrace();
+            fail("An exception has been thrown");
+        }
+    }
 }
